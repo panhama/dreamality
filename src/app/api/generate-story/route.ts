@@ -8,7 +8,9 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { generateText } from 'ai'; 
 import { generateStoryNarration, ElevenLabsService, elevenLabsService } from '@/lib/ai/elevenlabs';
-import { google } from '@/lib/ai/ai';  
+import { google } from '@/lib/ai/ai';
+import { db } from '@/lib/db';
+import { stories as storiesTable } from '@/lib/db/schema';  
 // ElevenLabs service (no longer needed - using the new service)
 // const elevenlabs = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY! });
 
@@ -217,14 +219,30 @@ Output ONLY a valid JSON array of scenes in this exact format (no markdown, no e
       }
     };
 
-    // Save story to JSON database
+    // Save story to database
+    try {
+      await db.insert(storiesTable).values({
+        storyId,
+        storyText,
+        imageUrls,
+        audioUrls,
+        scenes,
+        metadata: storyData.metadata,
+      });
+      console.log(`✓ Story saved to database: ${storyId}`);
+    } catch (dbError) {
+      console.error('Error saving story to database:', dbError);
+      // Continue without failing - we still want to return the story
+    }
+
+    // Also save to JSON file as backup
     try {
       await fs.mkdir(STORIES_DIR, { recursive: true });
       const storyPath = path.join(STORIES_DIR, `${storyId}.json`);
       await fs.writeFile(storyPath, JSON.stringify(storyData, null, 2));
-      console.log(`✓ Story saved to database: ${storyId}`);
+      console.log(`✓ Story saved to file backup: ${storyId}`);
     } catch (error) {
-      console.error('Error saving story to database:', error);
+      console.error('Error saving story to file backup:', error);
       // Continue without failing - we still want to return the story
     }
 

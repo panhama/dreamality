@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { db } from '@/lib/db';
+import { stories as storiesTable } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 const STORIES_DIR = path.join(process.cwd(), 'data', 'stories');
 
@@ -10,9 +13,19 @@ export async function GET(
 ) {
   try {
     const storyId = params.id;
+
+    // Try DB first
+    try {
+      const row = await db.select().from(storiesTable).where(eq(storiesTable.storyId, storyId)).limit(1);
+      if (row.length > 0) {
+        return NextResponse.json(row[0]);
+      }
+    } catch (dbErr) {
+      console.warn('DB read failed, falling back to file system:', dbErr);
+    }
+
+    // Filesystem fallback
     const storyPath = path.join(STORIES_DIR, `${storyId}.json`);
-    
-    // Check if story exists
     try {
       const storyData = await fs.readFile(storyPath, 'utf8');
       const story = JSON.parse(storyData);
