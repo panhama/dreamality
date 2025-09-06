@@ -7,10 +7,10 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { generateText } from 'ai'; 
-import { ElevenLabsClient } from 'elevenlabs';  // TTS
+import { generateStoryNarration, ElevenLabsService, elevenLabsService } from '@/lib/ai/elevenlabs';
 import { google } from '@/lib/ai/ai';  
-// ElevenLabs client
-const elevenlabs = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY! });
+// ElevenLabs service (no longer needed - using the new service)
+// const elevenlabs = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY! });
 
 // Temp dir for images (use Vercel Blob in production)
 const TEMP_DIR = path.join(process.cwd(), 'public', 'generated');
@@ -152,91 +152,50 @@ Output ONLY a valid JSON array of scenes in this exact format (no markdown, no e
       }
     }
 
-    // Step 4: Narrate with ElevenLabs
+    // Step 4: Narrate with ElevenLabs using the new service
     const audioUrls: string[] = [];
-    const storyScenes = storyText.split('\n\n').filter(scene => scene.trim());  // Split by scenes and filter empty
+    const storyScenes = storyText.split('\n\n').filter(scene => scene.trim());
     
-    // Ensure the generated directory exists
-    await fs.mkdir(TEMP_DIR, { recursive: true });
-    
-    for (const [i, sceneText] of storyScenes.entries()) {
-      try {
-        console.log(`Generating audio for scene ${i + 1}`);
-        
-        // Skip audio generation temporarily to debug
-        if (true) { // Change to false to enable audio generation
-          console.log('Audio generation temporarily disabled for debugging');
+    // Use the new ElevenLabs service for better handling
+    try {
+      console.log('Generating story narration with enhanced ElevenLabs service...');
+      const audioResults = await generateStoryNarration(storyScenes, ElevenLabsService.VOICES.RACHEL);
+      
+      for (const result of audioResults) {
+        if (result.publicUrl && result.audioBuffer.length > 0) {
+          audioUrls.push(result.publicUrl);
+          console.log(`✓ Audio generated: ${result.fileName}`);
+        } else {
+          console.log('Empty audio result, adding placeholder');
           audioUrls.push('');
-          continue;
         }
-        
-        const audio = await elevenlabs.textToSpeech.convert(
-          'pNInz6obpgDQGcFmaJgB',  // Example heroic narrator voice; customize
-          { 
-            text: sceneText, 
-            model_id: 'eleven_multilingual_v2',
-            voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.5
-            }
-          }
-        );
-        
-        const audioFileName = `${uuidv4()}_${i}.mp3`;
-        const audioPath = path.join(TEMP_DIR, audioFileName);
-        
-        // Handle different audio response types from ElevenLabs
+      }
+    } catch (error) {
+      console.error('Error generating batch audio:', error);
+      // Fallback to individual generation if batch fails
+      console.log('Falling back to individual audio generation...');
+      
+      for (const [i, sceneText] of storyScenes.entries()) {
         try {
-          if (audio instanceof Buffer) {
-            // Direct buffer response
-            await fs.writeFile(audioPath, audio);
-          } else if (audio && typeof audio === 'object' && Symbol.asyncIterator in audio) {
-            // It's an async iterable (ReadableStream from fetch)
-            const chunks: Uint8Array[] = [];
-            for await (const chunk of audio as AsyncIterable<Uint8Array>) {
-              chunks.push(chunk);
+          console.log(`Generating individual audio for scene ${i + 1}`);
+          const audioResult = await elevenLabsService.generateAudio({
+            text: sceneText,
+            voiceId: ElevenLabsService.VOICES.RACHEL,
+            model: ElevenLabsService.MODELS.MULTILINGUAL_V2,
+            voiceSettings: {
+              stability: 0.6,
+              similarity_boost: 0.8,
+              style: 0.2,
+              use_speaker_boost: true
             }
-            const buffer = Buffer.concat(chunks.map(chunk => Buffer.from(chunk)));
-            await fs.writeFile(audioPath, buffer);
-          } else {
-            // Try treating it as a Response-like object
-            const audioObj = audio as { arrayBuffer?: () => Promise<ArrayBuffer>; constructor?: { name?: string } };
-            console.log('Audio object has arrayBuffer method:', !!audioObj.arrayBuffer);
-            console.log('Audio object constructor:', audioObj.constructor?.name || 'unknown');
-            
-            if (audioObj.arrayBuffer) {
-              const arrayBuffer = await audioObj.arrayBuffer!();
-              const buffer = Buffer.from(arrayBuffer);
-              await fs.writeFile(audioPath, buffer);
-            } else {
-              // Last resort: try to pipe if it has a pipe method
-              const pipeableObj = audio as { pipe?: (dest: NodeJS.WritableStream) => void };
-              if (pipeableObj.pipe) {
-                console.log('Using pipe method...');
-                const { createWriteStream } = await import('fs');
-                const writeStream = createWriteStream(audioPath);
-                pipeableObj.pipe!(writeStream);
-                await new Promise<void>((resolve, reject) => {
-                  writeStream.on('finish', () => resolve());
-                  writeStream.on('error', reject);
-                });
-              } else {
-                throw new Error(`Unsupported audio type: ${typeof audio}, constructor: ${audioObj.constructor?.name || 'unknown'}`);
-              }
-            }
-          }
-        } catch (bufferError) {
-          console.error('Error processing audio buffer:', bufferError);
-          throw bufferError;
+          });
+          
+          audioUrls.push(audioResult.publicUrl);
+          console.log(`✓ Individual audio saved: ${audioResult.fileName}`);
+        } catch (individualError) {
+          console.error(`Error generating individual audio for scene ${i + 1}:`, individualError);
+          audioUrls.push('');
         }
-        
-        audioUrls.push(`/generated/${audioFileName}`);
-        console.log(`✓ Audio saved: ${audioFileName}`);
-      } catch (error) {
-        console.error('Error generating audio for scene:', error);
-        console.log('Skipping audio for this scene and continuing...');
-        // Add empty string to maintain array alignment
-        audioUrls.push('');
       }
     }
 
