@@ -2,6 +2,7 @@
 import { Button, Input, Textarea, Card, Label, Badge, Separator } from '@/components/ui/index'; 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Upload, Sparkles, User, Heart, Palette } from 'lucide-react';
 
 export default function Home() {
@@ -45,9 +46,14 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-lg text-gray-600 mb-2">Create magical stories that bring dreams to life</p>
-          <Badge variant="secondary" className="text-sm">
-            ✨ AI-Powered Story Generation
-          </Badge>
+          <div className="flex justify-center gap-4 items-center mb-4">
+            <Badge variant="secondary" className="text-sm">
+              ✨ AI-Powered Story Generation
+            </Badge>
+            <Link href="/stories" className="text-purple-600 hover:underline text-sm font-medium">
+              View Previous Stories →
+            </Link>
+          </div>
         </div>
 
         {/* Main Form Card */}

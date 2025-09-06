@@ -14,6 +14,7 @@ const elevenlabs = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY
 
 // Temp dir for images (use Vercel Blob in production)
 const TEMP_DIR = path.join(process.cwd(), 'public', 'generated');
+const STORIES_DIR = path.join(process.cwd(), 'data', 'stories');
 
 export async function POST(req: Request) {
   try {
@@ -40,9 +41,36 @@ export async function POST(req: Request) {
     } catch (err) {
       console.warn('Could not process reference photo for consistency:', err);
     }
-    const planPrompt = `Create a 4-6 scene uplifting story arc for kid named ${name}, dream: ${dream}, personality: ${personality}. Output as JSON array of scenes.`;
+    // Step 1: Plan story arc - with better JSON handling
+    const planPrompt = `Create a 4-6 scene uplifting story arc for a kid named ${name}, dream: ${dream}, personality: ${personality}. 
+
+Output ONLY a valid JSON array of scenes in this exact format (no markdown, no explanation):
+[{"title": "Scene Title", "description": "Scene description"}, {"title": "Scene Title 2", "description": "Scene description 2"}]`;
+    
     const { text: planText } = await generateText({ model: google('models/gemini-2.5-flash'), prompt: planPrompt });
-    const scenes = JSON.parse(planText);  // e.g., [{title: 'Intro', description: '...'}]
+    
+    // Clean the response to handle markdown code blocks
+    let cleanedPlanText = planText.trim();
+    if (cleanedPlanText.startsWith('```json')) {
+      cleanedPlanText = cleanedPlanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanedPlanText.startsWith('```')) {
+      cleanedPlanText = cleanedPlanText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    let scenes;
+    try {
+      scenes = JSON.parse(cleanedPlanText);
+    } catch {
+      console.error('Failed to parse scenes JSON:', cleanedPlanText);
+      // Fallback to default scenes structure
+      scenes = [
+        { title: "The Beginning", description: `${name} discovers their dream of ${dream}` },
+        { title: "The Challenge", description: `${name} faces obstacles but shows their ${personality} nature` },
+        { title: "The Journey", description: `${name} embarks on an adventure to achieve their dream` },
+        { title: "The Growth", description: `${name} learns important lessons and grows stronger` },
+        { title: "The Success", description: `${name} achieves their dream through determination and ${personality} traits` }
+      ];
+    }
 
     // Optional: LangGraph for agentic (planner → writer)
     // const graph = createGraph(...); // Define agents: planner, writer, etc. Invoke graph here.
@@ -58,10 +86,15 @@ export async function POST(req: Request) {
 
     const imageUrls: string[] = [];
     let fileIndex = 0;
+    
+    // Ensure the generated directory exists
+    await fs.mkdir(TEMP_DIR, { recursive: true });
+    
     for (const scene of scenes) {
       const prompt = `Generate an image for: ${scene.description} with ${name} as hero (${personality}). Use the reference photo to keep the character's appearance consistent across scenes.`;
       
       try {
+        console.log(`Generating image for scene ${fileIndex}: ${scene.title}`);
         const config = {
           responseModalities: [
             'IMAGE',
@@ -69,7 +102,7 @@ export async function POST(req: Request) {
           ],
         };
         const model = 'gemini-2.5-flash-image-preview';
-        const parts: any[] = [];
+        const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
         if (referenceImagePart) parts.push(referenceImagePart);
         parts.push({ text: prompt });
 
@@ -86,6 +119,7 @@ export async function POST(req: Request) {
           contents,
         });
 
+        let imageGenerated = false;
         for await (const chunk of response) {
           if (!chunk.candidates || !chunk.candidates[0].content || !chunk.candidates[0].content.parts) {
             continue;
@@ -93,21 +127,28 @@ export async function POST(req: Request) {
           if (chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData) {
             const fileName = `${uuidv4()}_${fileIndex++}`;
             const inlineData = chunk.candidates[0].content.parts[0].inlineData;
-            const fileExtension = mime.getExtension(inlineData.mimeType || '');
+            const fileExtension = mime.getExtension(inlineData.mimeType || '') || 'png';
             const buffer = Buffer.from(inlineData.data || '', 'base64');
             
             const filePath = path.join(TEMP_DIR, `${fileName}.${fileExtension}`);
-            await fs.mkdir(TEMP_DIR, { recursive: true });
             await fs.writeFile(filePath, buffer);
             imageUrls.push(`/generated/${fileName}.${fileExtension}`);
-          } else {
-            console.log(chunk.text);
+            console.log(`✓ Image saved: ${fileName}.${fileExtension}`);
+            imageGenerated = true;
+            break; // Take only the first image from the stream
+          } else if (chunk.text) {
+            console.log('Generated text:', chunk.text);
           }
+        }
+        
+        if (!imageGenerated) {
+          console.log('No image generated for scene, using placeholder');
+          imageUrls.push('/placeholder-image.svg');
         }
       } catch (error) {
         console.error('Error generating image for scene:', error);
         // Add a placeholder on error
-        imageUrls.push('/placeholder-image.png');
+        imageUrls.push('/placeholder-image.svg');
       }
     }
 
@@ -115,8 +156,12 @@ export async function POST(req: Request) {
     const audioUrls: string[] = [];
     const storyScenes = storyText.split('\n\n').filter(scene => scene.trim());  // Split by scenes and filter empty
     
+    // Ensure the generated directory exists
+    await fs.mkdir(TEMP_DIR, { recursive: true });
+    
     for (const [i, sceneText] of storyScenes.entries()) {
       try {
+        console.log(`Generating audio for scene ${i + 1}`);
         const audio = await elevenlabs.textToSpeech.convert(
           'pNInz6obpgDQGcFmaJgB',  // Example heroic narrator voice; customize
           { 
@@ -131,7 +176,6 @@ export async function POST(req: Request) {
         
         const audioFileName = `${uuidv4()}_${i}.mp3`;
         const audioPath = path.join(TEMP_DIR, audioFileName);
-        await fs.mkdir(TEMP_DIR, { recursive: true });
         
         // Handle audio as stream/buffer
         if (audio instanceof Buffer) {
@@ -150,6 +194,7 @@ export async function POST(req: Request) {
         }
         
         audioUrls.push(`/generated/${audioFileName}`);
+        console.log(`✓ Audio saved: ${audioFileName}`);
       } catch (error) {
         console.error('Error generating audio for scene:', error);
         // Add a placeholder on error or skip
@@ -157,9 +202,35 @@ export async function POST(req: Request) {
       }
     }
 
-    // Step 5: Return (use unique ID for story viewer)
+    // Step 5: Save story to database and return
     const storyId = uuidv4();
-    // Save to DB/Payload CMS if using; here, just return data
+    
+    // Create story object
+    const storyData = {
+      storyId,
+      storyText,
+      imageUrls,
+      audioUrls,
+      scenes,
+      metadata: {
+        name,
+        dream,
+        personality,
+        createdAt: new Date().toISOString()
+      }
+    };
+
+    // Save story to JSON database
+    try {
+      await fs.mkdir(STORIES_DIR, { recursive: true });
+      const storyPath = path.join(STORIES_DIR, `${storyId}.json`);
+      await fs.writeFile(storyPath, JSON.stringify(storyData, null, 2));
+      console.log(`✓ Story saved to database: ${storyId}`);
+    } catch (error) {
+      console.error('Error saving story to database:', error);
+      // Continue without failing - we still want to return the story
+    }
+
     return NextResponse.json({ storyId, storyText, imageUrls, audioUrls });
   } catch (error) {
     console.error('Error generating story:', error);
