@@ -9,10 +9,10 @@ const STORIES_DIR = path.join(process.cwd(), 'data', 'stories');
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const storyId = params.id;
+    const { id: storyId } = await params;
 
     // Try DB first
     try {

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Upload, Sparkles, User, Heart, Palette } from 'lucide-react';
+import Switch from '@/components/ui/toggle';
 
 export default function Home() {
   const [name, setName] = useState('');
@@ -35,13 +36,14 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 p-4 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4 flex items-center justify-center">
+      <Switch />
       <div className="w-full max-w-2xl">
         {/* Header Section */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
-            <Sparkles className="h-8 w-8 text-purple-600" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <Sparkles className="h-8 w-8 text-yellow-600" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
               Dreamality
             </h1>
           </div>
@@ -50,7 +52,7 @@ export default function Home() {
             <Badge variant="secondary" className="text-sm">
               ✨ AI-Powered Story Generation
             </Badge>
-            <Link href="/stories" className="text-purple-600 hover:underline text-sm font-medium">
+            <Link href="/stories" className="text-yellow-600 hover:underline text-sm font-medium">
               View Previous Stories →
             </Link>
           </div>
@@ -69,7 +71,7 @@ export default function Home() {
                 value={name} 
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                 placeholder="Enter your name..."
-                className="h-12 text-base border-2 focus:border-purple-500 rounded-xl"
+                className="h-12 text-base border-2 focus:border-yellow-500 rounded-xl"
                 required
               />
             </div>
@@ -84,7 +86,7 @@ export default function Home() {
                 value={dream} 
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDream(e.target.value)}
                 placeholder="I dream of becoming..."
-                className="h-12 text-base border-2 focus:border-purple-500 rounded-xl"
+                className="h-12 text-base border-2 focus:border-yellow-500 rounded-xl"
                 required
               />
             </div>
@@ -99,7 +101,7 @@ export default function Home() {
                 value={personality} 
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPersonality(e.target.value)}
                 placeholder="I am creative, adventurous, and love helping others..."
-                className="min-h-[100px] text-base border-2 focus:border-purple-500 rounded-xl resize-none"
+                className="min-h-[100px] text-base border-2 focus:border-yellow-500 rounded-xl resize-none"
                 required
               />
             </div>
@@ -117,9 +119,9 @@ export default function Home() {
                   type="file" 
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoto(e.target.files?.[0] || null)} 
                   accept="image/*"
-                  className="h-12 text-base border-2 border-dashed border-gray-300 focus:border-purple-500 rounded-xl cursor-pointer
+                  className="h-12 text-base border-2 border-dashed border-gray-300 focus:border-yellow-500 rounded-xl cursor-pointer
                            file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold
-                           file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                           file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"
                 />
                 {photo && (
                   <Badge className="absolute -top-2 -right-2 bg-green-500">
@@ -136,8 +138,8 @@ export default function Home() {
             <Button 
               type="submit" 
               disabled={isLoading || !name || !dream || !personality}
-              className="w-full h-14 text-lg font-semibold rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 
-                       hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed
+              className="w-full h-14 text-lg font-semibold rounded-xl bg-gradient-to-r from-yellow-600 to-amber-600 
+                       hover:from-yellow-700 hover:to-amber-700 disabled:opacity-50 disabled:cursor-not-allowed
                        shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
             >
               {isLoading ? (

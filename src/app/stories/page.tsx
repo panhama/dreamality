@@ -45,9 +45,9 @@ export default function StoriesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4 flex items-center justify-center">
         <Card className="p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto mb-4"></div>
           <p>Loading your magical stories...</p>
         </Card>
       </div>
@@ -55,13 +55,13 @@ export default function StoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
-            <Sparkles className="h-8 w-8 text-purple-600" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <Sparkles className="h-8 w-8 text-yellow-600" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
               Your Story Library
             </h1>
           </div>
@@ -69,7 +69,7 @@ export default function StoriesPage() {
             All your magical adventures in one place
           </p>
           <Link href="/">
-            <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+            <Button className="bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700">
               <Sparkles className="h-4 w-4 mr-2" />
               Create New Story
             </Button>
@@ -89,7 +89,7 @@ export default function StoriesPage() {
               You haven&apos;t created any magical stories yet. Let&apos;s change that!
             </p>
             <Link href="/">
-              <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+              <Button className="bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700">
                 <Sparkles className="h-4 w-4 mr-2" />
                 Create Your First Story
               </Button>
@@ -137,7 +137,7 @@ export default function StoriesPage() {
                 </div>
 
                 <Link href={`/story/${story.storyId}`}>
-                  <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                  <Button className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600">
                     Read Story
                   </Button>
                 </Link>
