@@ -8,7 +8,7 @@ export const google = createGoogleGenerativeAI({
 // Helper to generate story/text (non-image)
 export async function generateStory(prompt: string) {
   const { response } = await generateText({
-    model: google('models/gemini-2.5-flash'),  // Use 1.5 for text; switch to 2.5 for images
+    model: google('models/gemini-2.5-flash'),
     prompt,
   });
   return response;

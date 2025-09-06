@@ -6,10 +6,9 @@ import mime from 'mime';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { generateText } from 'ai';  // Vercel AI SDK v5: Use generateText, not generateContent
+import { generateText } from 'ai'; 
 import { ElevenLabsClient } from 'elevenlabs';  // TTS
-import { google } from '@/lib/ai/ai';  // Your AI setup (Note: May need update if using new SDK)
-
+import { google } from '@/lib/ai/ai';  
 // ElevenLabs client
 const elevenlabs = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY! });
 
@@ -22,7 +21,7 @@ export async function POST(req: Request) {
     const name = formData.get('name') as string;
     const dream = formData.get('dream') as string;
     const personality = formData.get('personality') as string;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const photo = formData.get('photo') as File | null;  // Optional upload - for future use
     // Use photo for character consistency in image generation
     let referenceImagePart: { inlineData: { mimeType: string; data: string } } | null = null;
@@ -41,9 +40,6 @@ export async function POST(req: Request) {
     } catch (err) {
       console.warn('Could not process reference photo for consistency:', err);
     }
-
-    // Step 1: Plan story arc (use LangGraph or simple prompt chain)
-    // Simple version (no LangGraph):
     const planPrompt = `Create a 4-6 scene uplifting story arc for kid named ${name}, dream: ${dream}, personality: ${personality}. Output as JSON array of scenes.`;
     const { text: planText } = await generateText({ model: google('models/gemini-2.5-flash'), prompt: planPrompt });
     const scenes = JSON.parse(planText);  // e.g., [{title: 'Intro', description: '...'}]
