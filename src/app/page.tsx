@@ -9,6 +9,7 @@ import { Upload, Sparkles, User, Heart, Palette, Settings as SettingsIcon, BookO
 import GenerationProgress from "@/components/GenerationProgress";
 import Switch from "@/components/ui/toggle";
 import GenerateButton from "@/components/ui/generate-button";
+import { DesignVoiceDialog } from "@/components/DesignVoiceDialog";
 
 export default function Home() {
   const [name, setName] = useState("");
@@ -98,13 +99,7 @@ export default function Home() {
               <ArrowRight className="h-4 w-4 opacity-95" />
             </Link>
           </div>
-          <div className="flex justify-center mt-2">
-            {/* <DesignVoiceDialog
-              preset={voicePreset}
-              onVoiceCreated={(id) => setVoiceId(id)}
-            /> */}
-            {voiceId && <Badge className="ml-2">Voice set ✓</Badge>}
-          </div>
+       
         </div>
 
         <div className="flex justify-end gap-1 items-center mb-1">
@@ -215,8 +210,17 @@ export default function Home() {
                   </select>
                 </div>
               </div>
+              <div className="flex justify-center mt-2">
+                <DesignVoiceDialog
+                  preset={voicePreset}
+                  onVoiceCreated={(id) => setVoiceId(id)}
+                />
+                {voiceId && <Badge className="ml-2">Voice set ✓</Badge>}
+              </div>
             </div>
 
+
+  
             {/* Submit */}
             <div className="flex justify-center">
               <GenerateButton
