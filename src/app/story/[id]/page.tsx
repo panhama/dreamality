@@ -74,14 +74,12 @@ export default function StoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4">
-      <StoryViewer
-        storyText={story.storyText}
-        imageUrls={story.imageUrls}
-        audioUrls={story.audioUrls}
-        scenes={story.scenes}
-        metadata={story.metadata}
-      />
-    </div>
+    <StoryViewer
+      storyText={story.storyText}
+      imageUrls={story.imageUrls}
+      audioUrls={story.audioUrls}
+      scenes={story.scenes}
+      metadata={story.metadata}
+    />
   );
 }

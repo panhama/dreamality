@@ -2,7 +2,7 @@
 import { Card, Button, Badge } from '@/components/ui/index';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Play, Pause, Volume2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Pause, Volume2, BookOpen, Star } from 'lucide-react';
 
 interface Scene {
   title: string;
@@ -28,6 +28,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
   const [currentScene, setCurrentScene] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [isFlipping, setIsFlipping] = useState(false);
   
   const storyScenes = storyText.split('\n\n').filter(scene => scene.trim());
   const totalScenes = Math.max(storyScenes.length, imageUrls.length, audioUrls.length);
@@ -70,133 +71,220 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
 
   const nextScene = () => {
     if (currentScene < totalScenes - 1) {
-      setCurrentScene(currentScene + 1);
+      setIsFlipping(true);
+      setTimeout(() => {
+        setCurrentScene(currentScene + 1);
+        setIsFlipping(false);
+      }, 300);
     }
   };
 
   const prevScene = () => {
     if (currentScene > 0) {
-      setCurrentScene(currentScene - 1);
+      setIsFlipping(true);
+      setTimeout(() => {
+        setCurrentScene(currentScene - 1);
+        setIsFlipping(false);
+      }, 300);
+    }
+  };
+
+  const goToScene = (sceneIndex: number) => {
+    if (sceneIndex !== currentScene) {
+      setIsFlipping(true);
+      setTimeout(() => {
+        setCurrentScene(sceneIndex);
+        setIsFlipping(false);
+      }, 300);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      {/* Header with metadata */}
-      {metadata && (
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent mb-2">
-            {metadata.name}&apos;s Magical Adventure
-          </h1>
-          <div className="flex justify-center gap-2 mb-4">
-            <Badge variant="secondary">Dream: {metadata.dream}</Badge>
-            <Badge variant="secondary">Personality: {metadata.personality}</Badge>
-          </div>
-          <p className="text-sm text-gray-500">
-            Created on {new Date(metadata.createdAt).toLocaleDateString()}
-          </p>
-        </div>
-      )}
-
-      {/* Main Story Card */}
-      <Card className="p-8 shadow-2xl border-0 bg-white/80 backdrop-blur-sm mb-6">
-        {/* Scene Header */}
-        {scenes && scenes[currentScene] && (
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-              {scenes[currentScene].title}
-            </h2>
-            <div className="w-20 h-1 bg-gradient-to-r from-yellow-400 to-amber-400 mx-auto rounded-full"></div>
-          </div>
-        )}
-
-        {/* Image */}
-        <div className="mb-6">
-          {imageUrls[currentScene] ? (
-            <div className="relative w-full h-[400px] rounded-xl overflow-hidden shadow-lg">
-              <Image 
-                src={imageUrls[currentScene]} 
-                alt={scenes?.[currentScene]?.title || `Scene ${currentScene + 1}`}
-                fill
-                className="object-cover"
-              />
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header with metadata - Kid Friendly */}
+        {metadata && (
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-3 mb-4">
+              <BookOpen className="h-10 w-10 text-yellow-600" />
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
+                {metadata.name}&apos;s Adventure Book
+              </h1>
+              <Star className="h-8 w-8 text-amber-500" />
             </div>
-          ) : (
-            <div className="w-full h-[400px] bg-gradient-to-br from-yellow-100 to-amber-100 rounded-xl flex items-center justify-center">
-              <p className="text-gray-500">Image loading...</p>
-            </div>
-          )}
-        </div>
-
-        {/* Story Text */}
-        <div className="mb-6">
-          <p className="text-lg leading-relaxed text-gray-700 font-medium">
-            {storyScenes[currentScene] || 'Story text loading...'}
-          </p>
-        </div>
-
-        {/* Audio Controls */}
-        {audioUrls[currentScene] && (
-          <div className="mb-6">
-            <div className="flex items-center justify-center gap-4 p-4 bg-gray-50 rounded-xl">
-              <Button
-                onClick={toggleAudio}
-                variant="outline"
-                size="lg"
-                className="flex items-center gap-2"
-              >
-                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                {isPlaying ? 'Pause' : 'Play'} Narration
-              </Button>
-              <Volume2 className="h-5 w-5 text-gray-500" />
+            <div className="flex justify-center gap-3 mb-4 flex-wrap">
+              <Badge variant="secondary" className="text-lg px-4 py-2 rounded-full bg-yellow-100 text-yellow-800 border-yellow-200">
+                ✨ Dream: {metadata.dream}
+              </Badge>
+              <Badge variant="secondary" className="text-lg px-4 py-2 rounded-full bg-amber-100 text-amber-800 border-amber-200">
+                🌟 {metadata.personality}
+              </Badge>
             </div>
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <Button
-            onClick={prevScene}
-            disabled={currentScene === 0}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
+        {/* Book-style Layout */}
+        <div className="relative perspective-1000">
+          <Card className={`
+            relative overflow-hidden shadow-2xl border-4 border-yellow-200
+            transition-all duration-500 ease-in-out transform-gpu
+            ${isFlipping ? 'scale-95 rotate-y-12' : 'scale-100 rotate-y-0'}
+            bg-gradient-to-br from-white via-yellow-50 to-amber-50
+            rounded-3xl min-h-[800px]
+          `}>
+            
+            {/* Book Pages */}
+            <div className="grid md:grid-cols-2 min-h-[600px]">
+              
+              {/* Left Page - Image */}
+              <div className="relative p-8 flex flex-col justify-center items-center bg-gradient-to-br from-yellow-50 to-orange-50 border-r-2 border-yellow-200 border-dashed">
+                {/* Page number top left */}
+                <div className="absolute top-4 left-4 text-sm font-bold text-yellow-600 bg-white px-3 py-1 rounded-full shadow-sm">
+                  {currentScene * 2 + 1}
+                </div>
+                
+                {/* Decorative corner */}
+                <div className="absolute top-4 right-4 w-8 h-8 bg-yellow-200 rounded-full flex items-center justify-center">
+                  <Star className="h-4 w-4 text-yellow-600" />
+                </div>
 
-          <div className="flex items-center gap-2">
-            {Array.from({ length: totalScenes }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentScene(i)}
-                className={`w-3 h-3 rounded-full transition-all ${
-                  i === currentScene 
-                    ? 'bg-yellow-600 scale-125' 
-                    : 'bg-gray-300 hover:bg-gray-400'
-                }`}
-              />
-            ))}
-          </div>
+                {/* Scene Title */}
+                {scenes && scenes[currentScene] && (
+                  <div className="text-center mb-6 w-full">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-3 font-serif">
+                      {scenes[currentScene].title}
+                    </h2>
+                    <div className="w-16 h-1 bg-gradient-to-r from-yellow-400 to-amber-400 mx-auto rounded-full"></div>
+                  </div>
+                )}
 
-          <Button
-            onClick={nextScene}
-            disabled={currentScene === totalScenes - 1}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+                {/* Image */}
+                <div className="flex-1 w-full flex items-center justify-center max-w-md">
+                  {imageUrls[currentScene] ? (
+                    <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-xl border-4 border-white">
+                      <Image 
+                        src={imageUrls[currentScene]} 
+                        alt={scenes?.[currentScene]?.title || `Scene ${currentScene + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full aspect-square bg-gradient-to-br from-yellow-100 to-amber-100 rounded-2xl flex items-center justify-center border-4 border-white shadow-xl">
+                      <div className="text-center">
+                        <BookOpen className="h-16 w-16 text-yellow-400 mx-auto mb-3" />
+                        <p className="text-yellow-600 font-medium">Loading magical image...</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Page - Text */}
+              <div className="relative p-8 flex flex-col justify-center bg-gradient-to-br from-white to-yellow-50">
+                {/* Page number top right */}
+                <div className="absolute top-4 right-4 text-sm font-bold text-yellow-600 bg-white px-3 py-1 rounded-full shadow-sm">
+                  {currentScene * 2 + 2}
+                </div>
+
+                {/* Decorative corner */}
+                <div className="absolute top-4 left-4 w-8 h-8 bg-amber-200 rounded-full flex items-center justify-center">
+                  <Star className="h-4 w-4 text-amber-600" />
+                </div>
+
+                {/* Story Text */}
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-full max-w-lg">
+                    <p className="text-xl leading-relaxed text-gray-800 font-serif text-justify indent-8 bg-white/70 p-6 rounded-xl shadow-sm border-l-4 border-yellow-400">
+                      {storyScenes[currentScene] || 'Once upon a time, in a magical land far away...'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Controls */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-yellow-200 via-amber-200 to-yellow-200 p-6 border-t-2 border-yellow-300">
+              <div className="flex items-center justify-between max-w-4xl mx-auto">
+                
+                {/* Previous Button */}
+                <Button
+                  onClick={prevScene}
+                  disabled={currentScene === 0 || isFlipping}
+                  variant="outline"
+                  size="lg"
+                  className="flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-full bg-white border-2 border-yellow-400 text-yellow-700 hover:bg-yellow-50 disabled:opacity-50 shadow-lg"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                  Previous Page
+                </Button>
+
+                {/* Center Audio Controls */}
+                <div className="flex flex-col items-center gap-3">
+                  {/* Audio Play/Pause */}
+                  {audioUrls[currentScene] && (
+                    <Button
+                      onClick={toggleAudio}
+                      size="lg"
+                      className="flex items-center gap-3 px-8 py-4 text-xl font-bold rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 text-white hover:from-yellow-600 hover:to-amber-600 shadow-xl transform hover:scale-105 transition-all"
+                    >
+                      {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
+                      {isPlaying ? 'Pause Story' : 'Read to Me!'}
+                      <Volume2 className="h-6 w-6" />
+                    </Button>
+                  )}
+
+                  {/* Page Dots */}
+                  <div className="flex items-center gap-2">
+                    {Array.from({ length: totalScenes }, (_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => goToScene(i)}
+                        className={`transition-all duration-300 rounded-full ${
+                          i === currentScene 
+                            ? 'w-4 h-4 bg-yellow-600 shadow-lg scale-125' 
+                            : 'w-3 h-3 bg-yellow-300 hover:bg-yellow-400 hover:scale-110'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Next Button */}
+                <Button
+                  onClick={nextScene}
+                  disabled={currentScene === totalScenes - 1 || isFlipping}
+                  variant="outline"
+                  size="lg"
+                  className="flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-full bg-white border-2 border-yellow-400 text-yellow-700 hover:bg-yellow-50 disabled:opacity-50 shadow-lg"
+                >
+                  Next Page
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              </div>
+
+              {/* Page Counter */}
+              <div className="text-center mt-3">
+                <p className="text-lg font-bold text-yellow-800">
+                  📖 Page {currentScene + 1} of {totalScenes}
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
 
-        {/* Scene Counter */}
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-500">
-            Scene {currentScene + 1} of {totalScenes}
-          </p>
+        {/* Back to Library Button */}
+        <div className="text-center mt-8">
+          <Button
+            onClick={() => window.history.back()}
+            variant="outline"
+            size="lg"
+            className="px-8 py-3 text-lg font-bold rounded-full bg-white border-2 border-amber-400 text-amber-700 hover:bg-amber-50 shadow-lg"
+          >
+            📚 Back to Story Library
+          </Button>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
