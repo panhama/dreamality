@@ -167,22 +167,24 @@ export async function POST(req: Request) {
     // optional: persistent designed voice id from the new dialog
     const designedVoiceId = (formData.get("voiceId") as string) || "";
 
-    const photo = formData.get("photo") as File | null;
-
-    // -------- Optional reference photo --------
-    let referenceImagePart:
-      | { inlineData: { mimeType: string; data: string } }
-      | null = null;
+    // -------- Optional reference photos --------
+    const referenceImageParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
 
     try {
-      if (photo && typeof photo.arrayBuffer === "function" && photo.size > 0) {
-        const ab = await photo.arrayBuffer();
-        const b64 = Buffer.from(ab).toString("base64");
-        const mimeType = photo.type || mime.getType(photo.name || "") || "image/jpeg";
-        referenceImagePart = { inlineData: { mimeType, data: b64 } };
+      // Handle multiple photos (photo_0, photo_1, etc.)
+      let photoIndex = 0;
+      while (photoIndex < 5) { // Max 5 photos
+        const photo = formData.get(`photo_${photoIndex}`) as File | null;
+        if (photo && typeof photo.arrayBuffer === "function" && photo.size > 0) {
+          const ab = await photo.arrayBuffer();
+          const b64 = Buffer.from(ab).toString("base64");
+          const mimeType = photo.type || mime.getType(photo.name || "") || "image/jpeg";
+          referenceImageParts.push({ inlineData: { mimeType, data: b64 } });
+        }
+        photoIndex++;
       }
     } catch (e) {
-      console.warn("Reference photo skipped:", e);
+      console.warn("Reference photos skipped:", e);
     }
 
     // -------- Helpers --------
@@ -334,16 +336,19 @@ ${JSON.stringify(plan)}
 
     for (const p of plan.scenes) {
       const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
-      if (referenceImagePart) parts.push(referenceImagePart);
+      if (referenceImageParts.length > 0) {
+        referenceImageParts.forEach(part => parts.push(part));
+      }
 
       const visual = [
         `Create a square 1:1 illustration for a children's picture book.`,
         `Style: ${stylePrompt}.`,
         `Hero: keep ${name} visually consistent across scenes (hair, outfit colors, one signature prop).`,
+        referenceImageParts.length > 0 ? `Reference images: Use the provided reference photos to blend facial features, hair style, and overall appearance for character consistency.` : '',
         `Caption vibe: ${p.caption}`,
         `Scene: ${p.illustration_prompt}`,
         `No text on image. Kid-friendly. Warm palette.`,
-      ].join("\n");
+      ].filter(Boolean).join("\n");
 
       parts.push({ text: visual });
 

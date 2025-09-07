@@ -16,7 +16,7 @@ export default function Home() {
   const [name, setName] = useState("");
   const [dream, setDream] = useState("");
   const [personality, setPersonality] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
 
   const [isPublic, setIsPublic] = useState(true);
   const [voicePreset, setVoicePreset] = useState<"warm_narrator"|"playful_hero"|"epic_guardian">("warm_narrator");
@@ -48,7 +48,9 @@ export default function Home() {
       fd.append("name", name);
       fd.append("dream", dream);
       fd.append("personality", personality);
-      if (photo) fd.append("photo", photo);
+      photos.forEach((photo, index) => {
+        fd.append(`photo_${index}`, photo);
+      });
 
       fd.append("voicePreset", voicePreset);
       fd.append("voiceId", voiceId || ""); // designed voice id if any
@@ -146,16 +148,23 @@ export default function Home() {
             {/* Photo */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <Upload className="h-4 w-4" /> Upload a photo (optional)
+                <Upload className="h-4 w-4" /> Upload photos (optional, max 5)
               </Label>
               <div className="relative">
-                <Input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+                <Input 
+                  type="file" 
+                  accept="image/*" 
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []).slice(0, 5);
+                    setPhotos(files);
+                  }}
                   className="h-12 text-base border-2 border-dashed border-gray-300 focus:border-yellow-500 rounded-xl cursor-pointer
                            file:mr-4 file:px-4 file:my-1 file:rounded-lg file:border-0 file:text-sm file:font-semibold
                            file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100" />
-                {photo && <Badge className="absolute -top-2 -right-2 bg-green-500">✓ Photo uploaded</Badge>}
+                {photos.length > 0 && <Badge className="absolute -top-2 -right-2 bg-green-500">✓ {photos.length} photo{photos.length > 1 ? 's' : ''} uploaded</Badge>}
               </div>
-              <p className="text-xs text-gray-500">A photo can improve character consistency in illustrations.</p>
+              <p className="text-xs text-gray-500">Multiple photos can improve character consistency and blend features for richer visual storytelling.</p>
             </div>
 
             <Separator className="my-6" />
