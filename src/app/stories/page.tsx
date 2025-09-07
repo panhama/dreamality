@@ -69,7 +69,7 @@ export default function StoriesPage() {
             All your magical adventures in one place
           </p>
           <Link href="/">
-            <Button className="bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700">
+            <Button className="bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 cursor-pointer text-white">
               <Sparkles className="h-4 w-4 mr-2" />
               Create New Story
             </Button>

@@ -25,8 +25,6 @@ export default function Home() {
   const [readingLevel, setReadingLevel] = useState<'early'|'primary'|'preteen'>('primary');
   const [storyLength, setStoryLength] = useState<'short'|'standard'|'epic'>('standard');
   const [imageStyle, setImageStyle] = useState<'watercolor'|'storybook'|'comic'|'paper_cut'>('storybook');
-  const [includeMoral, setIncludeMoral] = useState(true);
-  const [includeSfxCues, setIncludeSfxCues] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -52,8 +50,6 @@ export default function Home() {
       formData.append('readingLevel', readingLevel);
       formData.append('storyLength', storyLength);
       formData.append('imageStyle', imageStyle);
-      formData.append('includeMoral', String(includeMoral));
-      formData.append('includeSfxCues', String(includeSfxCues));
 
       const res = await fetch('/api/generate-story', { method: 'POST', body: formData });
       const { storyId } = await res.json();
@@ -129,7 +125,7 @@ export default function Home() {
                 <Input type="file" accept="image/*"
                   onChange={(e) => setPhoto(e.target.files?.[0] || null)}
                   className="h-12 text-base border-2 border-dashed border-gray-300 focus:border-yellow-500 rounded-xl cursor-pointer
-                           file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold
+                           file:mr-4 file:px-4 file:my-1 file:rounded-lg file:border-0 file:text-sm file:font-semibold
                            file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100" />
                 {photo && <Badge className="absolute -top-2 -right-2 bg-green-500">✓ Photo uploaded</Badge>}
               </div>
@@ -247,24 +243,13 @@ export default function Home() {
                   </select>
                 </div>
               </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <label className="flex items-center gap-3">
-                  <input type="checkbox" checked={includeMoral} onChange={(e)=>setIncludeMoral(e.target.checked)} />
-                  <span className="text-sm">Include a short moral at the end</span>
-                </label>
-                <label className="flex items-center gap-3">
-                  <input type="checkbox" checked={includeSfxCues} onChange={(e)=>setIncludeSfxCues(e.target.checked)} />
-                  <span className="text-sm">Add expressive cues like [whisper], [giggle], [whoosh]</span>
-                </label>
-              </div>
             </div>
 
             {/* Submit */}
             <Button
               type="submit"
               disabled={isLoading || !name || !dream || !personality}
-              className="w-full h-14 text-lg font-semibold rounded-xl bg-gradient-to-r from-yellow-600 to-amber-600 
+              className="w-full h-12 text-lg font-semibold rounded-xl bg-gradient-to-r from-yellow-600 to-amber-600 
                          hover:from-yellow-700 hover:to-amber-700 disabled:opacity-50 disabled:cursor-not-allowed
                          shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
             >
@@ -281,12 +266,13 @@ export default function Home() {
               )}
             </Button>
           </form>
+               <div className="text-center mt-8 text-sm text-gray-500">
+          <p>✨ Your story will include images, audio narration, and magical adventures ✨</p>
+        </div>
         </Card>
 
         {/* Footer */}
-        <div className="text-center mt-8 text-sm text-gray-500">
-          <p>✨ Your story will include images, audio narration, and magical adventures ✨</p>
-        </div>
+   
       </div>
     </div>
   );

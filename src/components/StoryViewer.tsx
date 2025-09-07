@@ -279,7 +279,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
             onClick={() => window.history.back()}
             variant="outline"
             size="lg"
-            className="px-8 py-3 text-lg font-bold rounded-full bg-white border-2 border-amber-400 text-amber-700 hover:bg-amber-50 shadow-lg"
+            className="px-8 py-3 text-lg font-bold rounded-full bg-white border-2 border-amber-400 text-amber-700 hover:bg-amber-50 shadow-lg cursor-pointer hover:scale-105 transition-all"
           >
             📚 Back to Story Library
           </Button>
