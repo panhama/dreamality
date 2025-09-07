@@ -115,10 +115,10 @@ export default function AudioTestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent mb-4">
             ElevenLabs v3 Audio Testing
           </h1>
           <Badge variant="secondary">Enhanced Voice Generation Service</Badge>
@@ -135,7 +135,7 @@ export default function AudioTestPage() {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Enter the text you want to convert to speech..."
-                className="min-h-[120px] text-base border-2 focus:border-purple-500 rounded-xl resize-none"
+                className="min-h-[120px] text-base border-2 focus:border-yellow-500 rounded-xl resize-none"
               />
             </div>
 
@@ -148,7 +148,7 @@ export default function AudioTestPage() {
                 <select
                   value={selectedVoice}
                   onChange={(e) => setSelectedVoice(e.target.value)}
-                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 outline-none"
+                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 outline-none"
                 >
                   <optgroup label="Predefined Voices">
                     {Object.entries(predefinedVoices).map(([name, id]) => (
@@ -177,7 +177,7 @@ export default function AudioTestPage() {
                 <select
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
-                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 outline-none"
+                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 outline-none"
                 >
                   {Object.entries(models).map(([name, id]) => (
                     <option key={id} value={id}>
@@ -192,7 +192,7 @@ export default function AudioTestPage() {
             <Button
               onClick={generateAudio}
               disabled={isGenerating || !text.trim()}
-              className="w-full h-14 text-lg font-semibold rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              className="w-full h-14 text-lg font-semibold rounded-xl bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700"
             >
               {isGenerating ? (
                 <div className="flex items-center gap-2">

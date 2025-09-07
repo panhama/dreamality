@@ -59,13 +59,13 @@ export default function StoryPage() {
 
   if (error || !story) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4 flex items-center justify-center">
         <Card className="p-8 text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Story Not Found</h2>
           <p className="text-gray-600 mb-4">
             {error || 'The story you are looking for does not exist.'}
           </p>
-          <Link href="/" className="text-purple-600 hover:underline">
+          <Link href="/" className="text-yellow-600 hover:underline">
             Create a new story
           </Link>
         </Card>
@@ -74,8 +74,8 @@ export default function StoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 p-4">
-      <StoryViewer 
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4">
+      <StoryViewer
         storyText={story.storyText}
         imageUrls={story.imageUrls}
         audioUrls={story.audioUrls}

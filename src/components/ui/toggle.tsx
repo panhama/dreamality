@@ -19,7 +19,7 @@ const Switch = () => {
 
 const StyledWrapper = styled.div`
   .checkbox-wrapper-41 {
-    --size: 100px;
+    --size: 50px;
   }
 
   .checkbox-wrapper-41 input[type="checkbox"] {
@@ -27,7 +27,7 @@ const StyledWrapper = styled.div`
     width: var(--size);
     height: calc(var(--size) / 2);
     background-color: #fff;
-    border: 3px solid #222;
+    border: 2px solid #222;
     border-radius: 30px 100px 100px 100px;
     box-shadow: 0 10px 20px rgba(0,0,0,0.2);
     outline: none;

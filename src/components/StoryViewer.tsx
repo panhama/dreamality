@@ -85,7 +85,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
       {/* Header with metadata */}
       {metadata && (
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent mb-2">
             {metadata.name}&apos;s Magical Adventure
           </h1>
           <div className="flex justify-center gap-2 mb-4">
@@ -106,7 +106,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
             <h2 className="text-2xl font-semibold text-gray-800 mb-2">
               {scenes[currentScene].title}
             </h2>
-            <div className="w-20 h-1 bg-gradient-to-r from-purple-400 to-pink-400 mx-auto rounded-full"></div>
+            <div className="w-20 h-1 bg-gradient-to-r from-yellow-400 to-amber-400 mx-auto rounded-full"></div>
           </div>
         )}
 
@@ -122,7 +122,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
               />
             </div>
           ) : (
-            <div className="w-full h-[400px] bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl flex items-center justify-center">
+            <div className="w-full h-[400px] bg-gradient-to-br from-yellow-100 to-amber-100 rounded-xl flex items-center justify-center">
               <p className="text-gray-500">Image loading...</p>
             </div>
           )}
@@ -172,7 +172,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                 onClick={() => setCurrentScene(i)}
                 className={`w-3 h-3 rounded-full transition-all ${
                   i === currentScene 
-                    ? 'bg-purple-600 scale-125' 
+                    ? 'bg-yellow-600 scale-125' 
                     : 'bg-gray-300 hover:bg-gray-400'
                 }`}
               />

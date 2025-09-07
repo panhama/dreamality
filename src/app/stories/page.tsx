@@ -98,8 +98,8 @@ export default function StoriesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {stories.map((story) => (
-              <Card 
-                key={story.storyId} 
+              <Card
+                key={story.storyId}
                 className="p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 bg-white/80 backdrop-blur-sm"
               >
                 <div className="mb-4">
@@ -110,9 +110,11 @@ export default function StoriesPage() {
                     <Badge variant="secondary" className="mr-2">
                       💭 {story.metadata.dream}
                     </Badge>
-                    <Badge variant="outline">
+
+                    <Badge variant="outline" className="whitespace-normal break-words">
                       ✨ {story.metadata.personality}
                     </Badge>
+
                   </div>
                 </div>
 
@@ -137,7 +139,7 @@ export default function StoriesPage() {
                 </div>
 
                 <Link href={`/story/${story.storyId}`}>
-                  <Button className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600">
+                  <Button className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 cursor-pointer">
                     Read Story
                   </Button>
                 </Link>
