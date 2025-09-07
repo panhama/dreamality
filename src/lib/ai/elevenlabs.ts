@@ -1,7 +1,6 @@
 import { ElevenLabsClient } from 'elevenlabs';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { minIOService } from '@/lib/minio';
 
 export interface VoiceSettings {
   stability?: number;
@@ -42,7 +41,6 @@ export interface AudioResult {
 
 export class ElevenLabsService {
   private client: ElevenLabsClient;
-  private outputDir: string;
 
   // Popular voice IDs for quick access
   static readonly VOICES = {
@@ -63,7 +61,7 @@ export class ElevenLabsService {
     TURBO_V2: 'eleven_turbo_v2', // Fast, good quality
   };
 
-  constructor(apiKey?: string, outputDir?: string) {
+  constructor(apiKey?: string) {
     if (!apiKey && !process.env.ELEVENLABS_API_KEY) {
       throw new Error('ElevenLabs API key is required');
     }
@@ -72,7 +70,7 @@ export class ElevenLabsService {
       apiKey: apiKey || process.env.ELEVENLABS_API_KEY! 
     });
     
-    this.outputDir = outputDir || path.join(process.cwd(), 'public', 'generated');
+    // No longer need local output directory since we're using MinIO
   }
 
   /**
@@ -94,9 +92,6 @@ export class ElevenLabsService {
     } = options;
 
     try {
-      // Ensure output directory exists
-      await fs.mkdir(this.outputDir, { recursive: true });
-
       console.log(`Generating audio with voice: ${voiceId}, model: ${model}`);
 
       // Use the latest TTS API with v3 features
@@ -110,8 +105,6 @@ export class ElevenLabsService {
 
       // Generate unique filename
       const fileName = `audio_${uuidv4()}.mp3`;
-      const filePath = path.join(this.outputDir, fileName);
-      const publicUrl = `/generated/${fileName}`;
 
       // Handle different response types
       let audioBuffer: Buffer;
@@ -133,15 +126,20 @@ export class ElevenLabsService {
         throw new Error(`Unsupported audio response type: ${typeof audio}`);
       }
 
-      // Save to file
-      await fs.writeFile(filePath, audioBuffer);
+      // Upload to MinIO instead of saving locally
+      const publicUrl = await minIOService.uploadFile(
+        audioBuffer,
+        fileName,
+        'audio/mpeg',
+        'audio'
+      );
 
-      console.log(`✓ Audio generated: ${fileName} (${audioBuffer.length} bytes)`);
+      console.log(`✓ Audio uploaded to MinIO: ${fileName} (${audioBuffer.length} bytes)`);
 
       return {
         audioBuffer,
         fileName,
-        filePath,
+        filePath: '', // Not used anymore since we're using MinIO
         publicUrl,
         metadata: {
           voiceId,
@@ -257,33 +255,13 @@ export class ElevenLabsService {
   }
 
   /**
-   * Clean up old audio files (optional utility)
+   * Clean up old audio files (MinIO cleanup would be implemented separately)
    */
-  async cleanupOldFiles(maxAgeHours: number = 24): Promise<number> {
-    try {
-      const files = await fs.readdir(this.outputDir);
-      const now = Date.now();
-      const maxAge = maxAgeHours * 60 * 60 * 1000;
-      let deletedCount = 0;
-
-      for (const file of files) {
-        if (file.endsWith('.mp3')) {
-          const filePath = path.join(this.outputDir, file);
-          const stats = await fs.stat(filePath);
-          
-          if (now - stats.mtime.getTime() > maxAge) {
-            await fs.unlink(filePath);
-            deletedCount++;
-          }
-        }
-      }
-
-      console.log(`✓ Cleaned up ${deletedCount} old audio files`);
-      return deletedCount;
-    } catch (error) {
-      console.error('Error cleaning up files:', error);
-      return 0;
-    }
+  async cleanupOldFiles(_maxAgeHours: number = 24): Promise<number> {
+    // MinIO cleanup would require listing objects and deleting old ones
+    // This is a placeholder - implement MinIO cleanup if needed
+    console.log(`MinIO cleanup not implemented yet (would clean files older than ${_maxAgeHours} hours)`);
+    return 0;
   }
 }
 

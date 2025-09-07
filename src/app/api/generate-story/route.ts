@@ -3,18 +3,14 @@ import {
 } from '@google/genai';
 import { NextResponse } from 'next/server';
 import mime from 'mime';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { generateText } from 'ai'; 
 import { ElevenLabsService, elevenLabsService } from '@/lib/ai/elevenlabs';
 import { google } from '@/lib/ai/ai';
 import { db } from '@/lib/db';
-import { stories as storiesTable } from '@/lib/db/schema';  
+import { stories as storiesTable } from '@/lib/db/schema';
+import { minIOService } from '@/lib/minio';  
 
-
-// Temp dir for images (use Vercel Blob in production)
-const TEMP_DIR = path.join(process.cwd(), 'public', 'generated');
 
 export async function POST(req: Request) {
   try {
@@ -130,9 +126,6 @@ Write engaging, magical content that brings the story to life while maintaining 
     const imageUrls: string[] = [];
     let fileIndex = 0;
     
-    // Ensure the generated directory exists
-    await fs.mkdir(TEMP_DIR, { recursive: true });
-    
     for (const scene of scenes) {
       const getStylePrompt = (style: string) => {
         switch(style) {
@@ -206,10 +199,17 @@ IMPORTANT: Generate the image in a perfect square (1:1) aspect ratio.`;
             const fileExtension = mime.getExtension(inlineData.mimeType || '') || 'png';
             const buffer = Buffer.from(inlineData.data || '', 'base64');
             
-            const filePath = path.join(TEMP_DIR, `${fileName}.${fileExtension}`);
-            await fs.writeFile(filePath, buffer);
-            imageUrls.push(`/generated/${fileName}.${fileExtension}`);
-            console.log(`✓ Image saved: ${fileName}.${fileExtension}`);
+            // Upload to MinIO instead of saving locally
+            const fullFileName = `${fileName}.${fileExtension}`;
+            const publicUrl = await minIOService.uploadFile(
+              buffer,
+              fullFileName,
+              inlineData.mimeType || 'image/png',
+              'images'
+            );
+            
+            imageUrls.push(publicUrl);
+            console.log(`✓ Image uploaded to MinIO: ${fullFileName}`);
             imageGenerated = true;
             break; // Take only the first image from the stream
           } else if (chunk.text) {
