@@ -171,15 +171,15 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
         {currentScene === 0 && (
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-3 mb-6">
-              <BookOpen className="h-12 w-12 text-yellow-600" />
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
+              <BookOpen className="h-10 w-10 text-yellow-600" />
+              <h1 className="text-3xl py-2 font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
                 {storyData.title}
               </h1>
               <Star className="h-10 w-10 text-amber-500" />
             </div>
             
             {/* Moral */}
-            <Card className="max-w-2xl mx-auto p-6 bg-gradient-to-r from-yellow-100 to-amber-100 border-2 border-yellow-300">
+            <Card className="max-w-2xl mx-auto p-2 bg-gradient-to-r gap-1 from-yellow-100 to-amber-100 border-2 border-yellow-300">
               <div className="flex items-center gap-2 mb-2">
                 <Heart className="h-6 w-6 text-red-500" />
                 <h2 className="text-2xl font-bold text-gray-800">The Heart of the Story</h2>

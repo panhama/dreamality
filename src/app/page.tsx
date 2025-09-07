@@ -19,10 +19,6 @@ export default function Home() {
 
   const [isPublic, setIsPublic] = useState(true);
   const [voicePreset, setVoicePreset] = useState<"warm_narrator"|"playful_hero"|"epic_guardian">("warm_narrator");
-  const [energy, setEnergy] = useState(70);
-  const [loudness, setLoudness] = useState(80);
-  const [guidance, setGuidance] = useState(35);
-  const [pace, setPace] = useState<"slow"|"normal"|"fast">("normal");
   const [voiceId, setVoiceId] = useState<string>("");
 
   const [readingLevel, setReadingLevel] = useState<"early"|"primary"|"preteen">("primary");
@@ -55,10 +51,6 @@ export default function Home() {
 
       fd.append("voicePreset", voicePreset);
       fd.append("voiceId", voiceId || ""); // designed voice id if any
-      fd.append("energy", String(energy));
-      fd.append("loudness", String(loudness));
-      fd.append("guidance", String(guidance));
-      fd.append("pace", pace);
 
       fd.append("readingLevel", readingLevel);
       fd.append("storyLength", storyLength);
@@ -163,48 +155,27 @@ export default function Home() {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <SettingsIcon className="h-4 w-4 text-yellow-700" />
-                <h3 className="font-semibold text-gray-800">Voice & Performance</h3>
+                <h3 className="font-semibold text-gray-800">Audio Narrator</h3>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Narration style</Label>
-                  <select value={voicePreset} onChange={(e) => setVoicePreset(e.target.value as "warm_narrator"|"playful_hero"|"epic_guardian")} className="w-full h-12 px-3 rounded-xl border-2 focus:border-yellow-500 bg-white">
-                    <option value="warm_narrator">Warm narrator (bedtime)</option>
-                    <option value="playful_hero">Playful hero (first-person)</option>
-                    <option value="epic_guardian">Epic guardian (cinematic)</option>
-                  </select>
-                  <p className="text-xs text-gray-500">Tip: use “Design / Select Voice” to bake a custom v3 voice.</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Pace</Label>
-                  <select value={pace} onChange={(e) => setPace(e.target.value as "slow"|"normal"|"fast")} className="w-full h-12 px-3 rounded-xl border-2 focus:border-yellow-500 bg-white">
-                    <option value="slow">Slow & soothing</option>
-                    <option value="normal">Normal</option>
-                    <option value="fast">Fast & excited</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Energy: {energy}</Label>
-                  <input type="range" min={0} max={100} step={1} value={energy} onChange={(e) => setEnergy(Number(e.target.value))} className="w-full accent-yellow-600" />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Loudness: {loudness}</Label>
-                  <input type="range" min={0} max={100} step={1} value={loudness} onChange={(e) => setLoudness(Number(e.target.value))} className="w-full accent-yellow-600" />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Guidance / expressiveness: {guidance}</Label>
-                  <input type="range" min={0} max={100} step={1} value={guidance} onChange={(e) => setGuidance(Number(e.target.value))} className="w-full accent-yellow-600" />
-                  <p className="text-xs text-gray-500">Lower = natural; higher = more stylized acting.</p>
-                </div>
+              <div className="space-y-2">
+                <Label>Story narrator voice style</Label>
+                <select 
+                  value={voicePreset} 
+                  onChange={(e) => setVoicePreset(e.target.value as "warm_narrator"|"playful_hero"|"epic_guardian")} 
+                  className="w-full h-12 px-3 rounded-xl border-2 focus:border-yellow-500 bg-white"
+                >
+                  <option value="warm_narrator">🌙 Warm Narrator - Perfect for bedtime stories</option>
+                  <option value="playful_hero">⚡ Playful Hero - Fun & energetic storytelling</option>
+                  <option value="epic_guardian">🏰 Epic Guardian - Cinematic & dramatic</option>
+                </select>
+                <p className="text-xs text-gray-500">
+                  ✨ Stories use ElevenLabs v3 with smart emotional tags for expressive narration.
+                  <br />
+                  💡 Tip: Use &quot;Design / Select Voice&quot; above to create a custom voice for even more personalization.
+                </p>
               </div>
-            </div>
-
-            <Separator className="my-6" />
+            </div>            <Separator className="my-6" />
 
             {/* Story Options */}
             <div className="space-y-4">

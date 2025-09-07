@@ -153,10 +153,11 @@ export async function POST(req: Request) {
     const personality = String(formData.get("personality") || "").trim();
 
     const voicePreset = (formData.get("voicePreset") as string) || "warm_narrator"; // warm_narrator | playful_hero | epic_guardian
-    const energy = parseInt((formData.get("energy") as string) || "70", 10);
-    const loudness = parseInt((formData.get("loudness") as string) || "80", 10);
-    const guidance = parseInt((formData.get("guidance") as string) || "35", 10);
-    const pace = (formData.get("pace") as "slow"|"normal"|"fast") || "normal";
+    // Use smart defaults for audio parameters (simplified frontend)
+    const energy = 70; // Default balanced energy
+    const loudness = 80; // Default good volume
+    const guidance = 35; // Default natural expression
+    const pace = "normal" as "slow"|"normal"|"fast"; // Default pace
 
     const readingLevel = (formData.get("readingLevel") as string) || "primary";
     const storyLength  = (formData.get("storyLength")  as string) || "standard"; // short|standard|epic
@@ -454,7 +455,8 @@ ${JSON.stringify(plan)}
           createdAt: new Date().toISOString(),
           voicePreset,
           designedVoiceId: designedVoiceId || null,
-          knobs: { energy, loudness, guidance, pace },
+          // Smart defaults for simplified audio config
+          knobs: { energy: 70, loudness: 80, guidance: 35, pace: "normal" },
           readingLevel,
           storyLength,
           imageStyle,
