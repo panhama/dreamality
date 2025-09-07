@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 
-const Switch = () => {
-  const [isChecked, setIsChecked] = useState(false);
+interface SwitchProps {
+  checked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  disabled?: boolean;
+}
+
+const Switch: React.FC<SwitchProps> = ({ 
+  checked = false, 
+  onCheckedChange, 
+  disabled = false 
+}) => {
+  const handleChange = () => {
+    if (!disabled && onCheckedChange) {
+      onCheckedChange(!checked);
+    }
+  };
 
   return (
     <StyledWrapper>
       <div className="checkbox-wrapper-41">
         <input
           type="checkbox"
-          checked={isChecked}
-          onChange={() => setIsChecked(!isChecked)}
+          checked={checked}
+          onChange={handleChange}
+          disabled={disabled}
         />
       </div>
     </StyledWrapper>

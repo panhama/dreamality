@@ -15,6 +15,9 @@ export default function Home() {
   // optional photo
   const [photo, setPhoto] = useState<File | null>(null);
 
+  // NEW: make story public toggle
+  const [isPublic, setIsPublic] = useState(false);
+
   // NEW: voice & story settings
   const [voicePreset, setVoicePreset] = useState<'warm_narrator'|'playful_hero'|'epic_guardian'>('warm_narrator');
   const [energy, setEnergy] = useState(70);     // 0–100
@@ -50,6 +53,7 @@ export default function Home() {
       formData.append('readingLevel', readingLevel);
       formData.append('storyLength', storyLength);
       formData.append('imageStyle', imageStyle);
+      formData.append('isPublic', String(isPublic));
 
       const res = await fetch('/api/generate-story', { method: 'POST', body: formData });
       const { storyId } = await res.json();
@@ -69,7 +73,7 @@ export default function Home() {
           <div className="inline-flex items-center gap-2 mb-4">
             <Sparkles className="h-8 w-8 text-yellow-600" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
-              Dreamality
+              Dreamlity
             </h1>
           </div>
           <p className="text-lg text-gray-600 mb-2">Create magical stories that bring dreams to life</p>
@@ -82,7 +86,7 @@ export default function Home() {
         </div>
         <div className='flex justify-end gap-1 items-center mb-1'>
           <Badge className='mb-1.5 p-1'>make story public</Badge>
-      <Switch />
+          <Switch checked={isPublic} onCheckedChange={setIsPublic} />
         </div>
 
         {/* Main Card */}

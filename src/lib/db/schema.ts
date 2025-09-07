@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, json, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, json, uuid, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const stories = pgTable('stories', {
@@ -13,7 +13,18 @@ export const stories = pgTable('stories', {
     dream: string;
     personality: string;
     createdAt: string;
+    // Voice & Performance settings
+    voicePreset?: string;
+    energy?: number;
+    loudness?: number;
+    guidance?: number;
+    pace?: string;
+    // Story options
+    readingLevel?: string;
+    storyLength?: string;
+    imageStyle?: string;
   }>().notNull(),
+  isPublic: boolean('is_public').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
