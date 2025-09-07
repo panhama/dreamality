@@ -329,7 +329,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                   disabled={currentScene === 0 || isFlipping}
                   variant="outline"
                   size="lg"
-                  className="flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-full bg-white border-2 border-yellow-400 text-yellow-700 hover:bg-yellow-50 disabled:opacity-50 shadow-lg"
+                  className="flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-full cursor-pointer bg-white border-2 border-yellow-400 text-yellow-700 hover:bg-yellow-50 disabled:opacity-50 shadow-lg"
                 >
                   <ChevronLeft className="h-6 w-6" />
                   Previous Page
@@ -372,7 +372,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                   disabled={currentScene === totalScenes - 1 || isFlipping}
                   variant="outline"
                   size="lg"
-                  className="flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-full bg-white border-2 border-yellow-400 text-yellow-700 hover:bg-yellow-50 disabled:opacity-50 shadow-lg"
+                  className="flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-full cursor-pointer bg-white border-2 border-yellow-400 text-yellow-700 hover:bg-yellow-50 disabled:opacity-50 shadow-lg"
                 >
                   Next Page
                   <ChevronRight className="h-6 w-6" />

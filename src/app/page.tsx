@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, Sparkles, User, Heart, Palette, Settings as SettingsIcon, BookOpen, ArrowRight } from "lucide-react";
+import Image from "next/image";
 import GenerationProgress from "@/components/GenerationProgress";
 import Switch from "@/components/ui/toggle";
 import GenerateButton from "@/components/ui/generate-button";
@@ -76,7 +77,15 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4 flex items-center justify-center">
+    <div className="bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50">
+    <div className="min-h-screen p-3 flex items-center justify-center">
+      {/* floating background decorations */}
+      <div className="pointer-events-none absolute z-50 left-0 top-20 rounded-xl overflow-hidden w-36 h-36 animate-float-slow">
+      <Image src="/decorations/firefighter-superman.png" alt="decoration" fill style={{ objectFit: "cover" }} priority={false} />
+      </div>
+      {/* <div className="pointer-events-none absolute right-6 bottom-24 opacity-70 rounded-xl overflow-hidden w-48 h-48 animate-float-slower">
+        <Image src="/decorations/superman-kid.jpg" alt="decoration" fill style={{ objectFit: "cover" }} priority={false} />
+      </div> */}
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
@@ -87,7 +96,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-lg text-gray-600 mb-2">Create magical stories that bring dreams to life</p>
-          <div className="flex justify-center gap-4 items-center mb-4">
+          <div className="flex justify-center flex-col gap-4 items-center mb-4">
             <Badge variant="secondary" className="text-sm">✨ AI story • images • narration</Badge>
             <Link
               href="/stories"
@@ -108,7 +117,7 @@ export default function Home() {
         </div>
 
         {/* Main Card */}
-        <Card className="p-8 shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
+        <Card className="p-8 shadow-2xl border-2 border-black bg-white/80 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Basics */}
             <div className="space-y-2">
@@ -241,5 +250,10 @@ export default function Home() {
 
       <GenerationProgress currentStep={currentStep} isLoading={isLoading} />
     </div>
+      <div aria-hidden className="flex justify-center">
+        <p className="text-[11px] text-gray-700/40 italic select-none">⚠️ Not meant to replace dad-duty bedtime stories — remember to actually read it aloud. Haha!</p>
+      </div>
+    </div>
   );
 }
+
