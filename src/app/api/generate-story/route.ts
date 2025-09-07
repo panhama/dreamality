@@ -16,7 +16,6 @@ import { stories as storiesTable } from '@/lib/db/schema';
 
 // Temp dir for images (use Vercel Blob in production)
 const TEMP_DIR = path.join(process.cwd(), 'public', 'generated');
-const STORIES_DIR = path.join(process.cwd(), 'data', 'stories');
 
 export async function POST(req: Request) {
   try {
@@ -301,7 +300,7 @@ Scene details: Show ${name} as the main character in this scene. The illustratio
       }
     }
 
-    // Step 5: Save story to database and return
+    // Step 5: Save story to database only (no JSON fallback for compliance)
     const storyId = uuidv4();
     
     // Create story object
@@ -329,7 +328,7 @@ Scene details: Show ${name} as the main character in this scene. The illustratio
       }
     };
 
-    // Save story to database
+    // Save story to database only
     try {
       await db.insert(storiesTable).values({
         storyId,
@@ -342,22 +341,20 @@ Scene details: Show ${name} as the main character in this scene. The illustratio
       });
       console.log(`✓ Story saved to database: ${storyId}`);
     } catch (dbError) {
-      console.error('Error saving story to database:', dbError);
-      // Continue without failing - we still want to return the story
+      console.error('❌ Database insertion failed:', dbError);
+      return NextResponse.json({ 
+        error: 'Failed to save story to database',
+        details: dbError instanceof Error ? dbError.message : 'Unknown database error'
+      }, { status: 500 });
     }
 
-    // Also save to JSON file as backup
-    try {
-      await fs.mkdir(STORIES_DIR, { recursive: true });
-      const storyPath = path.join(STORIES_DIR, `${storyId}.json`);
-      await fs.writeFile(storyPath, JSON.stringify(storyData, null, 2));
-      console.log(`✓ Story saved to file backup: ${storyId}`);
-    } catch (error) {
-      console.error('Error saving story to file backup:', error);
-      // Continue without failing - we still want to return the story
-    }
-
-    return NextResponse.json({ storyId, storyText, imageUrls, audioUrls });
+    return NextResponse.json({ 
+      storyId, 
+      storyText, 
+      imageUrls, 
+      audioUrls,
+      savedToDatabase: true
+    });
   } catch (error) {
     console.error('Error generating story:', error);
     return NextResponse.json({ error: 'Failed to generate story' }, { status: 500 });
