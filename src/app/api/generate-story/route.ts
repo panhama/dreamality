@@ -4,7 +4,7 @@ import mime from "mime";
 import { v4 as uuidv4 } from "uuid";
 import { generateText } from "ai";
 import { GoogleGenAI } from "@google/genai";
-import { google } from "@/lib/ai/ai"; // your Vercel AI SDK Google provider
+import { google } from "@/lib/ai/ai";
 import { ElevenLabsService } from "@/lib/ai/elevenlabs";
 import { minIOService } from "@/lib/minio";
 import { db } from "@/lib/db";

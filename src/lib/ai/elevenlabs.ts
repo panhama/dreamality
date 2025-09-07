@@ -44,7 +44,7 @@ export class ElevenLabsService {
   };
 
   static readonly MODELS = {
-    ELEVEN_V3: "eleven_v3",                 // best for [tags]
+    ELEVEN_V3: "eleven_v3",
     MULTILINGUAL_V2: "eleven_multilingual_v2",
     TURBO_V2_5: "eleven_turbo_v2_5",
     ENGLISH_V1: "eleven_monolingual_v1",
@@ -59,7 +59,7 @@ export class ElevenLabsService {
     const {
       text,
       voiceId = ElevenLabsService.VOICES.RACHEL,
-      model = ElevenLabsService.MODELS.ELEVEN_V3, // Updated to use ELEVEN_V3 as default
+      model = ElevenLabsService.MODELS.ELEVEN_V3, 
       voiceSettings = { stability: 0.5, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
       outputFormat = "mp3_44100_128",
       seed,
