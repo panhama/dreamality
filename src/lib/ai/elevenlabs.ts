@@ -91,6 +91,10 @@ export class ElevenLabsService {
       seed
     } = options;
 
+    if (process.env.ENABLE_ELEVENLABS_AUDIO !== '1') {
+      throw new Error('ElevenLabs audio generation is disabled to save tokens and money.');
+    }
+
     try {
       console.log(`Generating audio with voice: ${voiceId}, model: ${model}`);
 
