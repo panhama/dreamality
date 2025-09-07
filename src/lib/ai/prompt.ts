@@ -73,12 +73,12 @@ export const illustrationPrompt = (opts: {
       ? "comic/cel-shaded style with clean line art and vibrant flats"
       : opts.style === "paper_cut"
       ? "paper-cut collage with layered textures and craft-like shapes"
-      : opts.style === "realistic"
-      ? "photorealistic, natural lighting, authentic textures"
+    : opts.style === "realistic"
+    ? "photorealistic real human photograph — natural lighting, true-to-life skin tones, realistic depth of field and facial detail; explicitly avoid digital painting, CGI, or stylized illustration"
       : "cozy storybook with warm palette, painterly textures, soft edges";
 
   const base = opts.style === "realistic"
-    ? `Create a photorealistic image of: ${opts.description}.`
+    ? `Create a photorealistic real human photograph of: ${opts.description}. Do NOT produce a digital painting, CGI, or stylized illustration.`
     : `Create an illustration of: ${opts.description}.`;
 
   const consist = opts.usePhoto

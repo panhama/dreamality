@@ -164,6 +164,8 @@ export async function POST(req: Request) {
     const imageStyle   = (formData.get("imageStyle")   as string) || "storybook";
     const isPublic     = String(formData.get("isPublic")) === "true";
 
+    console.log("Image style received:", imageStyle); // Debug log
+
     // optional: persistent designed voice id from the new dialog
     const designedVoiceId = (formData.get("voiceId") as string) || "";
 
@@ -321,11 +323,11 @@ ${JSON.stringify(plan)}
 
     // -------- 3) IMAGES (Gemini 2.5 Flash Image Preview) --------
     const styleMap: Record<string, string> = {
-      watercolor: "soft watercolor washes, gentle edges",
-      comic: "bold lines, cel-shaded colors, cheerful",
-      paper_cut: "paper-cut collage, layered textures",
-      realistic: "photorealistic lighting, natural textures",
-      storybook: "warm cozy storybook, painterly brush, soft light",
+      watercolor: "soft watercolor painting with flowing paint effects and gentle color bleeds",
+      comic: "bold comic book illustration with cel-shading, vibrant colors and clear black outlines",
+      paper_cut: "paper-cut collage art with layered textures and dimensional depth effects",
+    realistic: "photorealistic real human photograph — authentic portrait-style photo with natural lighting, true-to-life skin tones, realistic depth of field, accurate facial features, and natural expressions; NOT a digital painting or stylized illustration",
+      storybook: "warm traditional storybook illustration with painterly brushstrokes and soft lighting",
     };
 
     const stylePrompt = styleMap[imageStyle] || styleMap.storybook;
@@ -342,12 +344,13 @@ ${JSON.stringify(plan)}
 
       const visual = [
         `Create a square 1:1 illustration for a children's picture book.`,
-        `Style: ${stylePrompt}.`,
+        `IMPORTANT - Art Style: ${stylePrompt}. This style is mandatory and must be clearly visible.`,
         `Hero: keep ${name} visually consistent across scenes (hair, outfit colors, one signature prop).`,
         referenceImageParts.length > 0 ? `Reference images: Use the provided reference photos to blend facial features, hair style, and overall appearance for character consistency.` : '',
         `Caption vibe: ${p.caption}`,
         `Scene: ${p.illustration_prompt}`,
-        `No text on image. Kid-friendly. Warm palette.`,
+  `Art direction: ${imageStyle === 'realistic' ? 'Produce a real human photograph-style image: portrait-quality photo with natural lighting, authentic skin tones, realistic depth of field and facial detail; explicitly avoid digital painting, CGI, or stylized art.' : imageStyle === 'comic' ? 'Use bold comic book style with cel-shading, vibrant colors, and clear outlines.' : imageStyle === 'watercolor' ? 'Use soft watercolor techniques with flowing paint effects and gentle color bleeds.' : imageStyle === 'paper_cut' ? 'Use paper-cut collage style with layered textures and dimensional appearance.' : 'Use warm storybook illustration style with painterly brushstrokes.'}`,
+        `No text on image. Kid-friendly content.`,
       ].filter(Boolean).join("\n");
 
       parts.push({ text: visual });
