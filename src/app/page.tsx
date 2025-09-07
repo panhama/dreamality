@@ -17,7 +17,7 @@ export default function Home() {
   const [photo, setPhoto] = useState<File | null>(null);
 
   // NEW: make story public toggle
-  const [isPublic, setIsPublic] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
 
   // NEW: voice & story settings
   const [voicePreset, setVoicePreset] = useState<'warm_narrator'|'playful_hero'|'epic_guardian'>('warm_narrator');
@@ -28,7 +28,7 @@ export default function Home() {
 
   const [readingLevel, setReadingLevel] = useState<'early'|'primary'|'preteen'>('primary');
   const [storyLength, setStoryLength] = useState<'short'|'standard'|'epic'>('standard');
-  const [imageStyle, setImageStyle] = useState<'watercolor'|'storybook'|'comic'|'paper_cut'>('storybook');
+  const [imageStyle, setImageStyle] = useState<'watercolor'|'storybook'|'comic'|'paper_cut'|'realistic'>('storybook');
 
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -255,13 +255,14 @@ export default function Home() {
                   <Label>Image style</Label>
                   <select
                     value={imageStyle}
-                    onChange={(e) => setImageStyle(e.target.value as 'watercolor'|'storybook'|'comic'|'paper_cut')}
+                    onChange={(e) => setImageStyle(e.target.value as 'watercolor'|'storybook'|'comic'|'paper_cut'|'realistic')}
                     className="w-full h-12 px-3 rounded-xl border-2 focus:border-yellow-500 bg-white"
                   >
                     <option value="storybook">Storybook (soft, cozy)</option>
                     <option value="watercolor">Watercolor</option>
                     <option value="paper_cut">Paper-cut collage</option>
                     <option value="comic">Comic / cel-shade</option>
+                    <option value="realistic">Realistic photo</option>
                   </select>
                 </div>
               </div>

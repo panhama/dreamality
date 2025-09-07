@@ -116,6 +116,12 @@ ${readingPrompt}
 Write engaging, magical content that brings the story to life while maintaining the specified reading level.`;
     const { text: storyText } = await generateText({ model: google('models/gemini-2.5-flash'), prompt: storyPrompt });
 
+    // Clean the story text to remove markdown separators
+    const cleanedStoryText = storyText
+      .replace(/\*\*\*/g, '') // Remove *** separators
+      .replace(/\n\n+/g, '\n\n') // Clean up extra line breaks
+      .trim();
+
     // Step 3: Generate images with GoogleGenAI
     const ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
@@ -133,6 +139,7 @@ Write engaging, magical content that brings the story to life while maintaining 
           case 'watercolor': return 'in soft watercolor art style with gentle washes and flowing colors';
           case 'comic': return 'in comic book or cel-shaded animation style with bold lines and vibrant colors';
           case 'paper_cut': return 'in paper-cut collage style with layered textures and craft-like appearance';
+          case 'realistic': return 'in realistic photographic style, high detail, professional photography, natural lighting, photorealistic quality';
           default: return 'in soft, cozy storybook illustration style with warm colors and gentle details'; // storybook
         }
       };
@@ -142,13 +149,25 @@ Write engaging, magical content that brings the story to life while maintaining 
         `Use the provided reference photo to maintain consistent appearance of ${name} throughout all scenes. Keep the same facial features, hair, and overall look as shown in the reference photo.` :
         `Create a consistent character design for ${name} that reflects their ${personality} personality.`;
 
-      const prompt = `Generate an illustration for: ${scene.description}. 
+      const prompt = imageStyle === 'realistic' 
+        ? `Generate a realistic photograph for: ${scene.description}. 
+
+Create a high-quality, professional photograph that looks like it was taken with a real camera. Use natural lighting, realistic textures, and photorealistic quality. Make it look like a real-world scene.
+
+${characterConsistencyPrompt}
+
+Scene details: Show ${name} as the main character in this scene. The photograph should be child-friendly, magical, and inspiring. Maintain visual consistency with previous scenes.
+
+IMPORTANT: Generate the image in a perfect square (1:1) aspect ratio.`
+        : `Generate an illustration for: ${scene.description}. 
 
 Style: ${stylePrompt}
 
 Character: ${characterConsistencyPrompt}
 
-Scene details: Show ${name} as the main character in this scene. The illustration should be child-friendly, magical, and inspiring. Maintain visual consistency with previous scenes.`;
+Scene details: Show ${name} as the main character in this scene. The illustration should be child-friendly, magical, and inspiring. Maintain visual consistency with previous scenes.
+
+IMPORTANT: Generate the image in a perfect square (1:1) aspect ratio.`;
       
       try {
         console.log(`Generating image for scene ${fileIndex}: ${scene.title}`);
@@ -211,7 +230,7 @@ Scene details: Show ${name} as the main character in this scene. The illustratio
 
     // Step 4: Narrate with ElevenLabs using the new service with custom voice settings
     const audioUrls: string[] = [];
-    const storyScenes = storyText.split('\n\n').filter(scene => scene.trim());
+    const storyScenes = cleanedStoryText.split('\n\n').filter(scene => scene.trim());
     
     // Map voice presets to actual voice IDs and settings
     const getVoiceConfig = (preset: string) => {
@@ -305,7 +324,7 @@ Scene details: Show ${name} as the main character in this scene. The illustratio
     // Create story object
     const storyData = {
       storyId,
-      storyText,
+      storyText: cleanedStoryText,
       imageUrls,
       audioUrls,
       scenes,
@@ -331,7 +350,7 @@ Scene details: Show ${name} as the main character in this scene. The illustratio
     try {
       await db.insert(storiesTable).values({
         storyId,
-        storyText,
+        storyText: cleanedStoryText,
         imageUrls,
         audioUrls,
         scenes,
@@ -349,7 +368,7 @@ Scene details: Show ${name} as the main character in this scene. The illustratio
 
     return NextResponse.json({ 
       storyId, 
-      storyText, 
+      storyText: cleanedStoryText, 
       imageUrls, 
       audioUrls,
       savedToDatabase: true

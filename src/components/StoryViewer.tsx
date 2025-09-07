@@ -160,23 +160,38 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
 
                 {/* Image */}
                 <div className="flex-1 w-full flex items-center justify-center max-w-md">
-                  {imageUrls[currentScene] ? (
-                    <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-xl border-4 border-white">
-                      <Image 
-                        src={imageUrls[currentScene]} 
-                        alt={scenes?.[currentScene]?.title || `Scene ${currentScene + 1}`}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full aspect-square bg-gradient-to-br from-yellow-100 to-amber-100 rounded-2xl flex items-center justify-center border-4 border-white shadow-xl">
-                      <div className="text-center">
-                        <BookOpen className="h-16 w-16 text-yellow-400 mx-auto mb-3" />
-                        <p className="text-yellow-600 font-medium">Loading magical image...</p>
+                  {(() => {
+                    // Find the best available image for this scene
+                    let imageToShow = imageUrls[currentScene];
+                    
+                    // If no image for current scene, use the last available image
+                    if (!imageToShow) {
+                      for (let i = currentScene - 1; i >= 0; i--) {
+                        if (imageUrls[i]) {
+                          imageToShow = imageUrls[i];
+                          break;
+                        }
+                      }
+                    }
+                    
+                    return imageToShow ? (
+                      <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-xl border-4 border-white">
+                        <Image 
+                          src={imageToShow} 
+                          alt={scenes?.[currentScene]?.title || `Scene ${currentScene + 1}`}
+                          fill
+                          className="object-cover"
+                        />
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-full aspect-square bg-gradient-to-br from-yellow-100 to-amber-100 rounded-2xl flex items-center justify-center border-4 border-white shadow-xl">
+                        <div className="text-center">
+                          <BookOpen className="h-16 w-16 text-yellow-400 mx-auto mb-3" />
+                          <p className="text-yellow-600 font-medium">Loading magical image...</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
