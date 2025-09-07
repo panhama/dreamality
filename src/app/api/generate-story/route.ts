@@ -324,10 +324,10 @@ ${JSON.stringify(plan)}
     // -------- 3) IMAGES (Gemini 2.5 Flash Image Preview) --------
     const styleMap: Record<string, string> = {
       watercolor: "soft watercolor painting with flowing paint effects and gentle color bleeds",
-      comic: "bold comic book illustration with cel-shading, vibrant colors and clear black outlines",
-      paper_cut: "paper-cut collage art with layered textures and dimensional depth effects",
-    realistic: "photorealistic real human photograph — authentic portrait-style photo with natural lighting, true-to-life skin tones, realistic depth of field, accurate facial features, and natural expressions; NOT a digital painting or stylized illustration",
-      storybook: "warm traditional storybook illustration with painterly brushstrokes and soft lighting",
+    comic: "bold comic book illustration with cel-shading, vibrant colors and clear black outlines; emphasize dynamic, heroic poses and dramatic panel-style composition",
+    paper_cut: "paper-cut collage art with layered textures and dimensional depth effects; arrange elements to emphasize heroic silhouette and movement",
+    realistic: "photorealistic real human photograph — authentic portrait-style photo with natural lighting, true-to-life skin tones, realistic depth of field, accurate facial features, and natural expressions; NOT a digital painting or stylized illustration; portray the subject in a heroic, confident pose (low-angle perspective when appropriate)",
+    storybook: "warm traditional storybook illustration with painterly brushstrokes and soft lighting; emphasize uplifting, heroic posture and triumphant compositions",
     };
 
     const stylePrompt = styleMap[imageStyle] || styleMap.storybook;
@@ -345,8 +345,9 @@ ${JSON.stringify(plan)}
       const visual = [
         `Create a square 1:1 illustration for a children's picture book.`,
         `IMPORTANT - Art Style: ${stylePrompt}. This style is mandatory and must be clearly visible.`,
-        `Hero: keep ${name} visually consistent across scenes (hair, outfit colors, one signature prop).`,
-        referenceImageParts.length > 0 ? `Reference images: Use the provided reference photos to blend facial features, hair style, and overall appearance for character consistency.` : '',
+  `Hero: keep ${name} visually consistent across scenes (hair, outfit colors, one signature prop).`,
+  `Hero pose: show ${name} in a heroic, confident stance or dynamic action pose; favor slight low-angle camera, strong silhouette, and clear line-of-action. Ensure poses remain child-appropriate and safe.`,
+  referenceImageParts.length > 0 ? `Reference images: Use the provided reference photos to blend facial features, hair style, and overall appearance for character consistency. Prioritize matching facial landmarks while adapting to the heroic pose.` : '',
         `Caption vibe: ${p.caption}`,
         `Scene: ${p.illustration_prompt}`,
   `Art direction: ${imageStyle === 'realistic' ? 'Produce a real human photograph-style image: portrait-quality photo with natural lighting, authentic skin tones, realistic depth of field and facial detail; explicitly avoid digital painting, CGI, or stylized art.' : imageStyle === 'comic' ? 'Use bold comic book style with cel-shading, vibrant colors, and clear outlines.' : imageStyle === 'watercolor' ? 'Use soft watercolor techniques with flowing paint effects and gentle color bleeds.' : imageStyle === 'paper_cut' ? 'Use paper-cut collage style with layered textures and dimensional appearance.' : 'Use warm storybook illustration style with painterly brushstrokes.'}`,

@@ -169,7 +169,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
       <div className="max-w-7xl mx-auto">
         {/* Story Title and Moral - Only show on first page */}
         {currentScene === 0 && (
-          <div className="text-center mb-8">
+          <div className="text-center mb-4">
             <div className="inline-flex items-center gap-3 mb-6">
               <BookOpen className="h-10 w-10 text-yellow-600" />
               <h1 className="text-3xl py-2 font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
@@ -219,7 +219,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
             transition-all duration-500 ease-in-out transform-gpu
             ${isFlipping ? 'scale-95 rotate-y-12' : 'scale-100 rotate-y-0'}
             bg-gradient-to-br from-white via-yellow-50 to-amber-50
-            rounded-3xl min-h-[820px]
+            rounded-3xl min-h-[850px]
           `}>
             
             {/* Book Pages */}

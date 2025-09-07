@@ -33,7 +33,7 @@ const steps = [
     title: "Recording Narration",
     description: "Adding magical voice narration to your story",
     icon: Mic,
-    duration: "15-25 seconds"
+    duration: "65-95 seconds"
   }
 ];
 

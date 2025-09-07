@@ -70,11 +70,11 @@ export const illustrationPrompt = (opts: {
     opts.style === "watercolor"
       ? "soft watercolor with gentle washes and flowing colors"
       : opts.style === "comic"
-      ? "comic/cel-shaded style with clean line art and vibrant flats"
+      ? "comic/cel-shaded style with clean line art and vibrant flats; emphasize dynamic, heroic poses and dramatic action lines"
       : opts.style === "paper_cut"
-      ? "paper-cut collage with layered textures and craft-like shapes"
+      ? "paper-cut collage with layered textures and craft-like shapes; arrange elements to emphasize heroic silhouette and movement"
     : opts.style === "realistic"
-    ? "photorealistic real human photograph — natural lighting, true-to-life skin tones, realistic depth of field and facial detail; explicitly avoid digital painting, CGI, or stylized illustration"
+    ? "photorealistic real human photograph — natural lighting, true-to-life skin tones, realistic depth of field and facial detail; portray subject in a heroic, confident pose (low-angle perspective when appropriate); explicitly avoid digital painting, CGI, or stylized illustration"
       : "cozy storybook with warm palette, painterly textures, soft edges";
 
   const base = opts.style === "realistic"
@@ -87,9 +87,12 @@ export const illustrationPrompt = (opts: {
 
   const aspect = opts.square ? "Output as a perfect 1:1 square." : "Prefer a 3:2 or 16:9 landscape.";
 
+  const heroNote = `Heroic direction: emphasize confident, uplifting poses and clear silhouettes; favor low-angle framing, open chest, and strong line-of-action while keeping poses child-appropriate.`;
+
   return `${base}
 Style: ${styleText}
 Character consistency: ${consist}
+${heroNote}
 Child-friendly, magical and inspiring. ${aspect}
 No on-image text; avoid UI artifacts or watermarks.`;
 };
