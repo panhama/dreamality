@@ -5,11 +5,10 @@ import { Input, Textarea, Card, Label, Badge, Separator } from "@/components/ui/
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Sparkles, User, Heart, Palette, Settings as SettingsIcon } from "lucide-react";
+import { Upload, Sparkles, User, Heart, Palette, Settings as SettingsIcon, BookOpen, ArrowRight } from "lucide-react";
 import GenerationProgress from "@/components/GenerationProgress";
 import Switch from "@/components/ui/toggle";
 import GenerateButton from "@/components/ui/generate-button";
-import { DesignVoiceDialog } from "@/components/DesignVoiceDialog";
 
 export default function Home() {
   const [name, setName] = useState("");
@@ -89,15 +88,21 @@ export default function Home() {
           <p className="text-lg text-gray-600 mb-2">Create magical stories that bring dreams to life</p>
           <div className="flex justify-center gap-4 items-center mb-4">
             <Badge variant="secondary" className="text-sm">✨ AI story • images • narration</Badge>
-            <Link href="/stories" className="text-yellow-600 hover:underline text-sm font-medium">
-              View Previous Stories →
+            <Link
+              href="/stories"
+              className="inline-flex items-center gap-3 rounded-full px-4 py-2 bg-gradient-to-r from-amber-600 via-yellow-600 to-yellow-400 text-white text-sm font-semibold shadow-md transform transition duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-300"
+              aria-label="Relive Legendary Tales - view previous stories"
+            >
+              <BookOpen className="h-5 w-5 opacity-95" />
+              <span>Relive Legendary Tales</span>
+              <ArrowRight className="h-4 w-4 opacity-95" />
             </Link>
           </div>
           <div className="flex justify-center mt-2">
-            <DesignVoiceDialog
+            {/* <DesignVoiceDialog
               preset={voicePreset}
               onVoiceCreated={(id) => setVoiceId(id)}
-            />
+            /> */}
             {voiceId && <Badge className="ml-2">Voice set ✓</Badge>}
           </div>
         </div>

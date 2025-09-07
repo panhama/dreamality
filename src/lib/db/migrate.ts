@@ -16,7 +16,8 @@ async function migrate() {
         scenes JSONB NOT NULL,
         metadata JSONB NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+        is_public BOOLEAN DEFAULT FALSE NOT NULL
       );
     `);
 
