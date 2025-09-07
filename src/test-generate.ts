@@ -1,7 +1,7 @@
 // Test script to verify both image and audio generation work
 import { GoogleGenAI } from "@google/genai";
 import { ElevenLabsService } from "./lib/ai/elevenlabs";
-import { minIOService } from "./lib/minio";
+import { r2Service } from "./lib/r2";
 import { v4 as uuidv4 } from "uuid";
 import mime from "mime";
 import * as fs from "fs/promises";
@@ -33,11 +33,11 @@ config({ path: path.join(process.cwd(), '.env') });
 //       const fileName = `test_image_${uuidv4()}.${ext}`;
 
 //       try {
-//         const url = await minIOService.uploadFile(buffer, fileName, inline.mimeType || "image/png", "images");
-//         console.log(`✅ Image uploaded to MinIO: ${url}`);
+//         const url = await r2Service.uploadFile(buffer, fileName, inline.mimeType || "image/png", "images");
+//         console.log(`✅ Image uploaded to R2: ${url}`);
 //         return url;
-//       } catch (minioError) {
-//         console.warn("❌ MinIO upload failed, saving locally:", minioError);
+//       } catch (r2Error) {
+//         console.warn("❌ R2 upload failed, saving locally:", r2Error);
 //         // Fallback: save to public/generated folder
 //         const publicDir = path.join(process.cwd(), 'public', 'generated');
 //         await fs.mkdir(publicDir, { recursive: true });

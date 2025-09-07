@@ -7,7 +7,7 @@ services:
       - .env
     environment:
       - DATABASE_URL=${DATABASE_URL}
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - R2_ENDPOINT=${R2_ENDPOINT}
     depends_on:
       - db
       - minio

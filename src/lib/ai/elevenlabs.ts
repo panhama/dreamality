@@ -1,6 +1,6 @@
 // lib/ai/elevenlabs.ts
 import { v4 as uuidv4 } from "uuid";
-import { minIOService } from "@/lib/minio";
+import { r2Service } from "@/lib/r2";
 
 export interface VoiceSettings {
   stability?: number;
@@ -114,16 +114,16 @@ export class ElevenLabsService {
     const fileName = `audio_${uuidv4()}.mp3`;
 
     try {
-      const publicUrl = await minIOService.uploadFile(audioBuffer, fileName, "audio/mpeg", "audio");
-      console.log(`✅ Audio uploaded to MinIO: ${publicUrl}`);
+      const publicUrl = await r2Service.uploadFile(audioBuffer, fileName, "audio/mpeg", "audio");
+      console.log(`✅ Audio uploaded to R2: ${publicUrl}`);
       return {
         audioBuffer,
         fileName,
         publicUrl,
         metadata: { voiceId, model, fileSize: audioBuffer.length },
       };
-    } catch (minioError) {
-      console.warn("MinIO upload failed for audio, saving locally:", minioError);
+    } catch (r2Error) {
+      console.warn("R2 upload failed for audio, saving locally:", r2Error);
       // Fallback: save to public/generated folder
       const fs = await import('fs/promises');
       const path = await import('path');

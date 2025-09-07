@@ -6,11 +6,11 @@ import { generateText } from "ai";
 import { GoogleGenAI } from "@google/genai";
 import { google } from "@/lib/ai/ai";
 import { ElevenLabsService } from "@/lib/ai/elevenlabs";
-import { minIOService } from "@/lib/minio";
+import { r2Service } from "@/lib/r2";
 import { db } from "@/lib/db";
 import { stories as storiesTable } from "@/lib/db/schema";
 
-// This route needs Node APIs (Buffer/MinIO), not Edge.
+// This route needs Node APIs (Buffer/R2), not Edge.
 export const runtime = "nodejs";
 
 type ScenePlan = {
@@ -373,10 +373,10 @@ ${JSON.stringify(plan)}
           const name = `${uuidv4()}_${fileIndex++}.${ext}`;
 
           try {
-            const url = await minIOService.uploadFile(buffer, name, inline.mimeType || "image/png", "images");
+            const url = await r2Service.uploadFile(buffer, name, inline.mimeType || "image/png", "images");
             imageUrls.push(url);
-          } catch (minioError) {
-            console.warn("MinIO upload failed, saving to local public folder:", minioError);
+          } catch (r2Error) {
+            console.warn("R2 upload failed, saving to local public folder:", r2Error);
             // Fallback: save to public/generated folder
             const fs = await import('fs/promises');
             const path = await import('path');

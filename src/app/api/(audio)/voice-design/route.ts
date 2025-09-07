@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { minIOService } from "@/lib/minio";
+import { r2Service } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
@@ -48,13 +48,13 @@ export async function POST(req: NextRequest) {
       duration_secs: p.duration_secs,
     })) ?? [];
 
-  // also upload base64s to MinIO for easy audition
+  // also upload base64s to R2 for easy audition
   const playable = [];
   for (const p of previews) {
     let url = p.url;
     if (!url && p.base64) {
       const buf = Buffer.from(p.base64, "base64");
-      url = await minIOService.uploadFile(buf, `voice_preview_${Date.now()}_${p.i}.mp3`, "audio/mpeg", "audio");
+      url = await r2Service.uploadFile(buf, `voice_preview_${Date.now()}_${p.i}.mp3`, "audio/mpeg", "audio");
     }
     playable.push({ generated_voice_id: p.generated_voice_id, url, duration_secs: p.duration_secs });
   }
