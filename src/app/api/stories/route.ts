@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { stories as storiesTable } from '@/lib/db/schema';
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 export async function GET() {
   try {
-    // Read from database only
+    // Read from database only - filter for public stories
     const rows = await db.select({
       storyId: storiesTable.storyId,
       metadata: storiesTable.metadata,
@@ -13,7 +13,7 @@ export async function GET() {
       audioUrls: storiesTable.audioUrls,
       scenes: storiesTable.scenes,
       createdAt: storiesTable.createdAt,
-    }).from(storiesTable).orderBy(desc(storiesTable.createdAt));
+    }).from(storiesTable).where(eq(storiesTable.isPublic, true)).orderBy(desc(storiesTable.createdAt));
 
     const mapped = rows.map(r => ({
       storyId: r.storyId,

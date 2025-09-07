@@ -1,380 +1,415 @@
-import {
-  GoogleGenAI,
-} from '@google/genai';
-import { NextResponse } from 'next/server';
-import mime from 'mime';
-import { v4 as uuidv4 } from 'uuid';
-import { generateText } from 'ai'; 
-import { ElevenLabsService, elevenLabsService } from '@/lib/ai/elevenlabs';
-import { google } from '@/lib/ai/ai';
-import { db } from '@/lib/db';
-import { stories as storiesTable } from '@/lib/db/schema';
-import { minIOService } from '@/lib/minio';  
+// app/api/generate-story/route.ts
+import { NextResponse } from "next/server";
+import mime from "mime";
+import { v4 as uuidv4 } from "uuid";
+import { generateText } from "ai";
+import { GoogleGenAI } from "@google/genai";
+import { google } from "@/lib/ai/ai"; // your Vercel AI SDK Google provider
+import { ElevenLabsService } from "@/lib/ai/elevenlabs";
+import { minIOService } from "@/lib/minio";
+import { db } from "@/lib/db";
+import { stories as storiesTable } from "@/lib/db/schema";
 
+// This route needs Node APIs (Buffer/MinIO), not Edge.
+export const runtime = "nodejs";
+
+type ScenePlan = {
+  id: string;               // "1", "2", ...
+  title: string;            // "Alarm at Midnight"
+  caption: string;          // 1 sentence caption for the page
+  description: string;      // what happens
+  illustration_prompt: string; // visual description for the illustrator
+};
+
+type StoryScene = {
+  id: string;
+  title: string;
+  caption: string;
+  text: string;             // 2–4 short sentences
+  emotion_hint: string;     // "excited", "serious", "gentle", etc
+};
+
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
+// Add expressive audio tags without mentioning age.
+// You can tweak the heuristics to taste.
+function tagLine(base: string, hint: string, i: number) {
+  const t = base.trim();
+
+  // Gentle heuristics
+  const excited = /\!|let.?s go|ready|woo+/i.test(t);
+  const serious = /(focus|careful|listen|danger|stay calm|steady)/i.test(t);
+  const gentle  = /(it’s okay|you’re safe|all right|we’re here)/i.test(t);
+  const laugh   = /(we did it|hooray|yay|awesome)/i.test(t);
+  const whoosh  = /(spray|hose|truck|sir(en)?|whoosh|roar)/i.test(t);
+
+  const tags: string[] = [];
+  if (hint.includes("excited") || excited) tags.push("excited");
+  if (hint.includes("serious") || serious) tags.push("serious");
+  if (hint.includes("gentle")  || gentle)  tags.push("gentle");
+  if (laugh) tags.push("laughs softly");
+  if (whoosh) tags.push("sfx: whoosh");
+
+  // Add breaths/pacing
+  if (i === 0) tags.unshift("smiling");
+  if (t.length > 90) tags.push("quick breath");
+
+  const prefix = tags.length ? `[${tags.join(", ")}] ` : "";
+  return prefix + t;
+}
+
+function buildNarrationScript(scenes: StoryScene[], mode: "narrator"|"playful"|"epic", pace: "slow"|"normal"|"fast") {
+  const speedIntro =
+    pace === "fast" ? "[higher pitch] " :
+    pace === "slow" ? "[soft, slow] " :
+    "";
+  const lines: string[] = [];
+  for (const s of scenes) {
+    const sentences = s.text.split(/(?<=[.!?])\s+/).filter(Boolean);
+    const hint = s.emotion_hint.toLowerCase();
+    lines.push(`[pause]`); // page turn
+    if (mode === "playful") {
+      // Light first-person reframe without impersonation words
+      lines.push(tagLine(`${speedIntro}${s.caption}`, hint, 0));
+      sentences.forEach((sent, i) => lines.push(tagLine(sent, hint, i + 1)));
+    } else if (mode === "epic") {
+      lines.push(tagLine(`[deep, cinematic] ${s.caption}`, "serious", 0));
+      sentences.forEach((sent, i) => lines.push(tagLine(sent, hint || "serious", i + 1)));
+    } else {
+      lines.push(tagLine(`${speedIntro}${s.caption}`, hint, 0));
+      sentences.forEach((sent, i) => lines.push(tagLine(sent, hint || "gentle", i + 1)));
+    }
+  }
+  return lines.join(" ");
+}
 
 export async function POST(req: Request) {
   try {
+    // -------- Parse form --------
     const formData = await req.formData();
-    const name = formData.get('name') as string;
-    const dream = formData.get('dream') as string;
-    const personality = formData.get('personality') as string;
+    const name = String(formData.get("name") || "").trim();
+    const dream = String(formData.get("dream") || "").trim();
+    const personality = String(formData.get("personality") || "").trim();
 
-    // NEW: Voice & story settings from frontend
-    const voicePreset = formData.get('voicePreset') as string || 'warm_narrator';
-    const energy = parseInt(formData.get('energy') as string || '70');
-    const loudness = parseInt(formData.get('loudness') as string || '80');
-    const guidance = parseInt(formData.get('guidance') as string || '35');
-    const pace = formData.get('pace') as string || 'normal';
+    const voicePreset = (formData.get("voicePreset") as string) || "warm_narrator"; // warm_narrator | playful_hero | epic_guardian
+    const energy = parseInt((formData.get("energy") as string) || "70", 10);
+    const loudness = parseInt((formData.get("loudness") as string) || "80", 10);
+    const guidance = parseInt((formData.get("guidance") as string) || "35", 10);
+    const pace = (formData.get("pace") as "slow"|"normal"|"fast") || "normal";
 
-    const readingLevel = formData.get('readingLevel') as string || 'primary';
-    const storyLength = formData.get('storyLength') as string || 'standard';
-    const imageStyle = formData.get('imageStyle') as string || 'storybook';
-    const isPublic = formData.get('isPublic') === 'true';
+    const readingLevel = (formData.get("readingLevel") as string) || "primary";
+    const storyLength  = (formData.get("storyLength")  as string) || "standard"; // short|standard|epic
+    const imageStyle   = (formData.get("imageStyle")   as string) || "storybook";
+    const isPublic     = String(formData.get("isPublic")) === "true";
 
-    const photo = formData.get('photo') as File | null;  // Optional upload - for character consistency
-    // Use photo for character consistency in image generation
-    let referenceImagePart: { inlineData: { mimeType: string; data: string } } | null = null;
+    // optional: persistent designed voice id from the new dialog
+    const designedVoiceId = (formData.get("voiceId") as string) || "";
+
+    const photo = formData.get("photo") as File | null;
+
+    // -------- Optional reference photo --------
+    let referenceImagePart:
+      | { inlineData: { mimeType: string; data: string } }
+      | null = null;
+
     try {
-      if (photo && typeof (photo).arrayBuffer === 'function' && (photo).size > 0) {
-        const ab = await (photo).arrayBuffer();
-        const b64 = Buffer.from(ab).toString('base64');
-        const mimeType = (photo).type || mime.getType((photo).name || '') || 'image/jpeg';
-        referenceImagePart = {
-          inlineData: {
-            mimeType,
-            data: b64,
-          },
-        };
+      if (photo && typeof photo.arrayBuffer === "function" && photo.size > 0) {
+        const ab = await photo.arrayBuffer();
+        const b64 = Buffer.from(ab).toString("base64");
+        const mimeType = photo.type || mime.getType(photo.name || "") || "image/jpeg";
+        referenceImagePart = { inlineData: { mimeType, data: b64 } };
       }
-    } catch (err) {
-      console.warn('Could not process reference photo for consistency:', err);
-    }
-    // Step 1: Plan story arc - with enhanced settings
-    const getSceneCount = (length: string) => {
-      switch(length) {
-        case 'short': return '3-4';
-        case 'epic': return '8-10';
-        default: return '6'; // standard
-      }
-    };
-
-    const getReadingLevelPrompt = (level: string) => {
-      switch(level) {
-        case 'early': return 'Use simple, short words and very basic sentences. Perfect for beginning readers.';
-        case 'preteen': return 'Use richer vocabulary and more complex sentence structures suitable for pre-teens.';
-        default: return 'Use clear, engaging language with simple to moderate sentence structures.'; // primary
-      }
-    };
-
-    const sceneCount = getSceneCount(storyLength);
-    const readingPrompt = getReadingLevelPrompt(readingLevel);
-
-    const planPrompt = `Create a ${sceneCount} scene uplifting story arc for a kid named ${name}, dream: ${dream}, personality: ${personality}. 
-
-${readingPrompt}
-
-Output ONLY a valid JSON array of scenes in this exact format (no markdown, no explanation):
-[{"title": "Scene Title", "description": "Scene description"}, {"title": "Scene Title 2", "description": "Scene description 2"}]`;
-    
-    const { text: planText } = await generateText({ model: google('models/gemini-2.5-flash'), prompt: planPrompt });
-    
-    // Clean the response to handle markdown code blocks
-    let cleanedPlanText = planText.trim();
-    if (cleanedPlanText.startsWith('```json')) {
-      cleanedPlanText = cleanedPlanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (cleanedPlanText.startsWith('```')) {
-      cleanedPlanText = cleanedPlanText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-    }
-    
-    let scenes;
-    try {
-      scenes = JSON.parse(cleanedPlanText);
-    } catch {
-      console.error('Failed to parse scenes JSON:', cleanedPlanText);
-      // Fallback to default scenes structure
-      scenes = [
-        { title: "The Beginning", description: `${name} discovers their dream of ${dream}` },
-        { title: "The Challenge", description: `${name} faces obstacles but shows their ${personality} nature` },
-        { title: "The Journey", description: `${name} embarks on an adventure to achieve their dream` },
-        { title: "The Growth", description: `${name} learns important lessons and grows stronger` },
-        { title: "The Success", description: `${name} achieves their dream through determination and ${personality} traits` }
-      ];
+    } catch (e) {
+      console.warn("Reference photo skipped:", e);
     }
 
-    // Optional: LangGraph for agentic (planner → writer)
-    // const graph = createGraph(...); // Define agents: planner, writer, etc. Invoke graph here.
+    // -------- Helpers --------
+    const getSceneCount = () =>
+      storyLength === "short"   ? 4 :
+      storyLength === "epic"    ? 9 :
+      6;
 
-    // Step 2: Write full story text with reading level consideration
-    const storyPrompt = `Write an age-appropriate story based on this arc: ${JSON.stringify(scenes)}. Make ${name} the hero.
+    const readingGuide =
+      readingLevel === "early"
+        ? "Use short words and very short sentences. Avoid complex clauses."
+        : readingLevel === "preteen"
+        ? "Use richer vocabulary with slightly longer sentences; still friendly and clear."
+        : "Use clear, simple sentences with a friendly, upbeat tone.";
 
-${readingPrompt}
+    // -------- 1) PLAN (strict JSON) --------
+    const plannerPrompt = `
+Plan a ${getSceneCount()}-scene children's story arc.
 
-Write engaging, magical content that brings the story to life while maintaining the specified reading level.`;
-    const { text: storyText } = await generateText({ model: google('models/gemini-2.5-flash'), prompt: storyPrompt });
+Hero name: ${name}
+Dream: ${dream}
+Personality traits: ${personality}
 
-    // Clean the story text to remove markdown separators
-    const cleanedStoryText = storyText
-      .replace(/\*\*\*/g, '') // Remove *** separators
-      .replace(/\n\n+/g, '\n\n') // Clean up extra line breaks
+Return STRICT JSON with this schema (no markdown, no commentary, no extra keys):
+{
+  "scenes": [
+    {
+      "id": "1",
+      "title": "Short scene title",
+      "caption": "One short caption that could sit under an illustration",
+      "description": "1–2 sentences describing what happens",
+      "illustration_prompt": "One line describing the visual for this scene: setting, mood, hero outfit/props, warm palette, no on-image text"
+    }
+  ]
+}
+Rules:
+- Keep a consistent visual identity for ${name} across all scenes (hair, outfit colors, one signature prop).
+- Keep it positive and heroic.
+- ${readingGuide}
+`;
+
+    const { text: planTextRaw } = await generateText({
+      model: google("models/gemini-2.5-flash"),
+      prompt: plannerPrompt,
+    });
+
+    const planText = planTextRaw
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
       .trim();
 
-    // Step 3: Generate images with GoogleGenAI
-    const ai = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
+    let plan: { scenes: ScenePlan[] };
+    try {
+      plan = JSON.parse(planText);
+    } catch {
+      // Fallback plan
+      plan = {
+        scenes: Array.from({ length: getSceneCount() }, (_, i) => ({
+          id: String(i + 1),
+          title: i === 0 ? "The Alarm" : i === getSceneCount() - 1 ? "Heroes Rest" : `Scene ${i + 1}`,
+          caption:
+            i === 0
+              ? `${name} hears the call and gets ready.`
+              : i === getSceneCount() - 1
+              ? `${name} smiles, knowing helping people matters most.`
+              : `${name} keeps going—brave and kind.`,
+          description:
+            i === 0
+              ? `${name} prepares to act like a real ${dream}, quick and careful.`
+              : i === getSceneCount() - 1
+              ? `${name} reflects on the day, proud and thankful.`
+              : `${name} faces a moment and learns something useful.`,
+          illustration_prompt:
+            "Warm, cozy storybook vibe; soft edges; gentle light; hero centered; no on-image text.",
+        })),
+      };
+    }
+
+    // -------- 2) WRITE (strict JSON scenes) --------
+    const writerPrompt = `
+Write the story from this plan as STRICT JSON: 
+{
+  "title": "Picture-book title",
+  "moral": "Short positive moral",
+  "scenes": [
+    { "id": "1", "title":"", "caption":"", "text":"2–4 short sentences", "emotion_hint":"excited|serious|gentle|encouraging" }
+  ]
+}
+Constraints:
+- ${readingGuide}
+- Keep ${name} consistent; uplifting, brave, kind tone.
+- Use everyday vocabulary; no on-image text; no violence.
+Here is the plan JSON:
+${JSON.stringify(plan)}
+`;
+
+    const { text: storyJsonRaw } = await generateText({
+      model: google("models/gemini-2.5-flash"),
+      prompt: writerPrompt,
     });
 
+    const storyJson = storyJsonRaw
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+
+    let story: { title: string; moral: string; scenes: StoryScene[] };
+    try {
+      story = JSON.parse(storyJson);
+    } catch {
+      // emergency fallback from plan
+      story = {
+        title: `${name} the ${dream} Hero`,
+        moral: "Real heroes are kind, careful, and helpful.",
+        scenes: plan.scenes.map((p) => ({
+          id: p.id,
+          title: p.title,
+          caption: p.caption,
+          text: p.description,
+          emotion_hint: "encouraging",
+        })),
+      };
+    }
+
+    // -------- 3) IMAGES (Gemini 2.5 Flash Image Preview) --------
+    const styleMap: Record<string, string> = {
+      watercolor: "soft watercolor washes, gentle edges",
+      comic: "bold lines, cel-shaded colors, cheerful",
+      paper_cut: "paper-cut collage, layered textures",
+      realistic: "photorealistic lighting, natural textures",
+      storybook: "warm cozy storybook, painterly brush, soft light",
+    };
+
+    const stylePrompt = styleMap[imageStyle] || styleMap.storybook;
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const imageUrls: string[] = [];
     let fileIndex = 0;
-    
-    for (const scene of scenes) {
-      const getStylePrompt = (style: string) => {
-        switch(style) {
-          case 'watercolor': return 'in soft watercolor art style with gentle washes and flowing colors';
-          case 'comic': return 'in comic book or cel-shaded animation style with bold lines and vibrant colors';
-          case 'paper_cut': return 'in paper-cut collage style with layered textures and craft-like appearance';
-          case 'realistic': return 'in realistic photographic style, high detail, professional photography, natural lighting, photorealistic quality';
-          default: return 'in soft, cozy storybook illustration style with warm colors and gentle details'; // storybook
-        }
-      };
 
-      const stylePrompt = getStylePrompt(imageStyle);
-      const characterConsistencyPrompt = referenceImagePart ? 
-        `Use the provided reference photo to maintain consistent appearance of ${name} throughout all scenes. Keep the same facial features, hair, and overall look as shown in the reference photo.` :
-        `Create a consistent character design for ${name} that reflects their ${personality} personality.`;
+    for (const p of plan.scenes) {
+      const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
+      if (referenceImagePart) parts.push(referenceImagePart);
 
-      const prompt = imageStyle === 'realistic' 
-        ? `Generate a realistic photograph for: ${scene.description}. 
+      const visual = [
+        `Create a square 1:1 illustration for a children's picture book.`,
+        `Style: ${stylePrompt}.`,
+        `Hero: keep ${name} visually consistent across scenes (hair, outfit colors, one signature prop).`,
+        `Caption vibe: ${p.caption}`,
+        `Scene: ${p.illustration_prompt}`,
+        `No text on image. Kid-friendly. Warm palette.`,
+      ].join("\n");
 
-Create a high-quality, professional photograph that looks like it was taken with a real camera. Use natural lighting, realistic textures, and photorealistic quality. Make it look like a real-world scene.
+      parts.push({ text: visual });
 
-${characterConsistencyPrompt}
-
-Scene details: Show ${name} as the main character in this scene. The photograph should be child-friendly, magical, and inspiring. Maintain visual consistency with previous scenes.
-
-IMPORTANT: Generate the image in a perfect square (1:1) aspect ratio.`
-        : `Generate an illustration for: ${scene.description}. 
-
-Style: ${stylePrompt}
-
-Character: ${characterConsistencyPrompt}
-
-Scene details: Show ${name} as the main character in this scene. The illustration should be child-friendly, magical, and inspiring. Maintain visual consistency with previous scenes.
-
-IMPORTANT: Generate the image in a perfect square (1:1) aspect ratio.`;
-      
       try {
-        console.log(`Generating image for scene ${fileIndex}: ${scene.title}`);
-        const config = {
-          responseModalities: [
-            'IMAGE',
-            'TEXT',
-          ],
-        };
-        const model = 'gemini-2.5-flash-image-preview';
-        const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
-        if (referenceImagePart) parts.push(referenceImagePart);
-        parts.push({ text: prompt });
-
-        const contents = [
-          {
-            role: 'user',
-            parts,
-          },
-        ];
-
         const response = await ai.models.generateContentStream({
-          model,
-          config,
-          contents,
+          model: "gemini-2.5-flash-image-preview",
+          contents: [{ role: "user", parts }],
+          config: { responseModalities: ["IMAGE", "TEXT"] },
         });
 
-        let imageGenerated = false;
+        let done = false;
         for await (const chunk of response) {
-          if (!chunk.candidates || !chunk.candidates[0].content || !chunk.candidates[0].content.parts) {
-            continue;
+          const inline = chunk?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+          if (!inline?.data) continue;
+
+          const buffer = Buffer.from(inline.data, "base64");
+          const ext = mime.getExtension(inline.mimeType || "") || "png";
+          const name = `${uuidv4()}_${fileIndex++}.${ext}`;
+
+          try {
+            const url = await minIOService.uploadFile(buffer, name, inline.mimeType || "image/png", "images");
+            imageUrls.push(url);
+          } catch (minioError) {
+            console.warn("MinIO upload failed, saving to local public folder:", minioError);
+            // Fallback: save to public/generated folder
+            const fs = await import('fs/promises');
+            const path = await import('path');
+            const publicDir = path.join(process.cwd(), 'public', 'generated');
+            await fs.mkdir(publicDir, { recursive: true });
+            await fs.writeFile(path.join(publicDir, name), buffer);
+            imageUrls.push(`/generated/${name}`);
+            console.log(`✓ Image saved locally: /generated/${name}`);
           }
-          if (chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData) {
-            const fileName = `${uuidv4()}_${fileIndex++}`;
-            const inlineData = chunk.candidates[0].content.parts[0].inlineData;
-            const fileExtension = mime.getExtension(inlineData.mimeType || '') || 'png';
-            const buffer = Buffer.from(inlineData.data || '', 'base64');
-            
-            // Upload to MinIO instead of saving locally
-            const fullFileName = `${fileName}.${fileExtension}`;
-            const publicUrl = await minIOService.uploadFile(
-              buffer,
-              fullFileName,
-              inlineData.mimeType || 'image/png',
-              'images'
-            );
-            
-            imageUrls.push(publicUrl);
-            console.log(`✓ Image uploaded to MinIO: ${fullFileName}`);
-            imageGenerated = true;
-            break; // Take only the first image from the stream
-          } else if (chunk.text) {
-            console.log('Generated text:', chunk.text);
-          }
+          done = true;
+          break;
         }
-        
-        if (!imageGenerated) {
-          console.log('No image generated for scene, using placeholder');
-          imageUrls.push('/placeholder-image.svg');
-        }
-      } catch (error) {
-        console.error('Error generating image for scene:', error);
-        // Add a placeholder on error
-        imageUrls.push('/placeholder-image.svg');
+        if (!done) imageUrls.push("/placeholder-image.svg");
+      } catch (e) {
+        console.error("Image gen error:", e);
+        imageUrls.push("/placeholder-image.svg");
       }
     }
 
-    // Step 4: Narrate with ElevenLabs using the new service with custom voice settings
-    const audioUrls: string[] = [];
-    const storyScenes = cleanedStoryText.split('\n\n').filter(scene => scene.trim());
-    
-    // Map voice presets to actual voice IDs and settings
-    const getVoiceConfig = (preset: string) => {
-      switch(preset) {
-        case 'playful_hero':
-          return {
-            voiceId: ElevenLabsService.VOICES.FREYA, // Young, energetic female voice
-            stability: Math.max(0.1, Math.min(1.0, (100 - energy) / 100)), // Higher energy = lower stability for more variation
-            similarity_boost: 0.85,
-            style: Math.max(0.1, Math.min(1.0, guidance / 100)), // Use guidance for expressiveness
-            use_speaker_boost: true
-          };
-        case 'epic_guardian':
-          return {
-            voiceId: ElevenLabsService.VOICES.DANIEL, // Deep, cinematic male voice
-            stability: 0.7, // More stable for epic narration
-            similarity_boost: 0.8,
-            style: Math.max(0.2, Math.min(1.0, guidance / 100)),
-            use_speaker_boost: true
-          };
-        default: // warm_narrator
-          return {
-            voiceId: ElevenLabsService.VOICES.RACHEL, // Warm, gentle female voice
-            stability: Math.max(0.4, Math.min(0.8, (100 - energy) / 150 + 0.4)), // Balanced stability
-            similarity_boost: Math.max(0.7, Math.min(1.0, loudness / 100)),
-            style: Math.max(0.1, Math.min(0.5, guidance / 200)), // More natural for bedtime stories
-            use_speaker_boost: true
-          };
+    // -------- 4) AUDIO (ElevenLabs v3 + tags) --------
+    // Build expressive narration
+    const mode: "playful" | "epic" | "narrator" =
+      voicePreset === "playful_hero" ? "playful" :
+      voicePreset === "epic_guardian" ? "epic" : "narrator";
+
+    const narrationScript = buildNarrationScript(story.scenes, mode, pace);
+
+    // v3’s best practice is chunking to ~3k chars.
+    // Here we split on scene boundaries (already separated by [pause]).
+    const chunks = narrationScript
+      .split(/\[pause\]/g)
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map((s, i) => (i === 0 ? s : "[pause] " + s));
+
+    // Voice config: use designed voice if provided, else presets
+    const presetToFallbackVoice = () => {
+      switch (voicePreset) {
+        case "playful_hero": return ElevenLabsService.VOICES.FREYA;
+        case "epic_guardian": return ElevenLabsService.VOICES.DANIEL;
+        default: return ElevenLabsService.VOICES.RACHEL;
       }
     };
 
-    const voiceConfig = getVoiceConfig(voicePreset);
-    
-    // Use the new ElevenLabs service for better handling
-    try {
-      console.log('Generating story narration with enhanced ElevenLabs service...');
-      console.log('Voice settings:', { voicePreset, energy, loudness, guidance, pace });
-      
-      const audioResults = await elevenLabsService.generateBatchAudio(storyScenes, {
-        voiceId: voiceConfig.voiceId,
-        model: ElevenLabsService.MODELS.MULTILINGUAL_V2,
-        voiceSettings: {
-          stability: voiceConfig.stability,
-          similarity_boost: voiceConfig.similarity_boost,
-          style: voiceConfig.style,
-          use_speaker_boost: voiceConfig.use_speaker_boost
-        }
-      });
-      
-      for (const result of audioResults) {
-        if (result.publicUrl && result.audioBuffer.length > 0) {
-          audioUrls.push(result.publicUrl);
-          console.log(`✓ Audio generated: ${result.fileName}`);
-        } else {
-          console.log('Empty audio result, adding placeholder');
-          audioUrls.push('');
-        }
-      }
-    } catch (error) {
-      console.error('Error generating batch audio:', error);
-      // Fallback to individual generation if batch fails
-      console.log('Falling back to individual audio generation...');
-      
-      for (const [i, sceneText] of storyScenes.entries()) {
-        try {
-          console.log(`Generating individual audio for scene ${i + 1}`);
-          const audioResult = await elevenLabsService.generateAudio({
-            text: sceneText,
-            voiceId: voiceConfig.voiceId,
-            model: ElevenLabsService.MODELS.MULTILINGUAL_V2,
-            voiceSettings: {
-              stability: voiceConfig.stability,
-              similarity_boost: voiceConfig.similarity_boost,
-              style: voiceConfig.style,
-              use_speaker_boost: voiceConfig.use_speaker_boost
-            }
-          });
-          
-          audioUrls.push(audioResult.publicUrl);
-          console.log(`✓ Individual audio saved: ${audioResult.fileName}`);
-        } catch (individualError) {
-          console.error(`Error generating individual audio for scene ${i + 1}:`, individualError);
-          audioUrls.push('');
-        }
-      }
-    }
+    const chosenVoiceId = designedVoiceId || presetToFallbackVoice();
 
-    // Step 5: Save story to database only (no JSON fallback for compliance)
+    const elevenLabsService = new ElevenLabsService();
+
+    const stability = clamp(1 - energy / 100, 0.25, 0.85);
+    const style = clamp(guidance / 100, 0.1, 1);
+    const similarity_boost = clamp(loudness / 100, 0.6, 1);
+
+    const audioResults = await elevenLabsService.generateBatchAudio(chunks, {
+      voiceId: chosenVoiceId,
+      model: ElevenLabsService.MODELS.TURBO_V2_5, // Using turbo_v2_5 which works reliably
+      voiceSettings: {
+        stability,
+        similarity_boost,
+        style,
+        use_speaker_boost: true,
+      },
+      outputFormat: "mp3_44100_128",
+    });
+
+    const audioUrls = audioResults.map((r) => r.publicUrl || "");
+
+    // -------- 5) Persist & respond --------
     const storyId = uuidv4();
-    
-    // Create story object
-    const storyData = {
-      storyId,
-      storyText: cleanedStoryText,
-      imageUrls,
-      audioUrls,
-      scenes,
-      metadata: {
-        name,
-        dream,
-        personality,
-        createdAt: new Date().toISOString(),
-        // Voice & Performance settings
-        voicePreset,
-        energy,
-        loudness,
-        guidance,
-        pace,
-        // Story options
-        readingLevel,
-        storyLength,
-        imageStyle,
-      }
-    };
 
-    // Save story to database only
     try {
       await db.insert(storiesTable).values({
-        storyId,
-        storyText: cleanedStoryText,
+        storyId: storyId,
+        storyText: JSON.stringify(story), // keep structured result
         imageUrls,
         audioUrls,
-        scenes,
-        metadata: storyData.metadata,
+        scenes: story.scenes.map(scene => ({
+          title: scene.title,
+          description: scene.caption
+        })),
+        metadata: {
+          name,
+          dream,
+          personality,
+          createdAt: new Date().toISOString(),
+          voicePreset,
+          designedVoiceId: designedVoiceId || null,
+          knobs: { energy, loudness, guidance, pace },
+          readingLevel,
+          storyLength,
+          imageStyle,
+        },
         isPublic,
-      });
-      console.log(`✓ Story saved to database: ${storyId}`);
-    } catch (dbError) {
-      console.error('❌ Database insertion failed:', dbError);
-      return NextResponse.json({ 
-        error: 'Failed to save story to database',
-        details: dbError instanceof Error ? dbError.message : 'Unknown database error'
-      }, { status: 500 });
+      } as typeof storiesTable.$inferInsert);
+    } catch (dbErr) {
+      console.error("DB insert failed:", dbErr);
+      return NextResponse.json(
+        { error: "Failed to save story to database", details: dbErr instanceof Error ? dbErr.message : String(dbErr) },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ 
-      storyId, 
-      storyText: cleanedStoryText, 
-      imageUrls, 
+    return NextResponse.json({
+      storyId,
+      story,
+      imageUrls,
       audioUrls,
-      savedToDatabase: true
+      savedToDatabase: true,
     });
-  } catch (error) {
-    console.error('Error generating story:', error);
-    return NextResponse.json({ error: 'Failed to generate story' }, { status: 500 });
+  } catch (err) {
+    console.error("generate-story error:", err);
+    return NextResponse.json({ error: "Failed to generate story" }, { status: 500 });
   }
 }

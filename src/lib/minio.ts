@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import https from 'https';
 
 export class MinIOService {
   private s3Client: S3Client;
@@ -8,14 +9,22 @@ export class MinIOService {
   constructor() {
     this.bucketName = process.env.MINIO_BUCKET_NAME || 'dreamlity';
 
+    const endpoint = process.env.MINIO_ENDPOINT || 'http://apis3.aurelonlabs.com:9002';
+    
     this.s3Client = new S3Client({
       region: 'us-east-1', // MinIO doesn't require a specific region
-      endpoint: process.env.MINIO_ENDPOINT || 'https://apis3.aurelonlabs.com',
+      endpoint: endpoint,
       credentials: {
         accessKeyId: process.env.MINIO_ACCESS_KEY_ID || 'panhama',
         secretAccessKey: process.env.MINIO_SECRET_ACCESS_KEY || 'Iloveyoujesus1!GOD',
       },
       forcePathStyle: true, // Required for MinIO
+      // Disable SSL certificate verification for self-signed certificates
+      requestHandler: endpoint.startsWith('https') ? {
+        httpsAgent: new https.Agent({
+          rejectUnauthorized: false
+        })
+      } : undefined,
     });
   }
 
@@ -31,6 +40,8 @@ export class MinIOService {
     const key = `${folder}/${fileName}`;
 
     try {
+      console.log(`Uploading to MinIO: ${key}, size: ${buffer.length} bytes`);
+      
       const command = new PutObjectCommand({
         Bucket: this.bucketName,
         Key: key,
@@ -55,6 +66,11 @@ export class MinIOService {
       return signedUrl;
     } catch (error) {
       console.error('Error uploading file to MinIO:', error);
+      console.error('MinIO Config:', {
+        endpoint: process.env.MINIO_ENDPOINT,
+        bucket: this.bucketName,
+        key: key
+      });
       throw new Error(`Failed to upload file to MinIO: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }  /**

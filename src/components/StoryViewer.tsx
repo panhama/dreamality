@@ -2,11 +2,25 @@
 import { Card, Button, Badge } from '@/components/ui/index';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Play, Pause, Volume2, BookOpen, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Pause, Volume2, BookOpen, Star, Heart } from 'lucide-react';
 
 interface Scene {
+  id: string;
+  title: string;
+  caption: string;
+  text: string;
+  emotion_hint: string;
+}
+
+interface OldScene {
   title: string;
   description: string;
+}
+
+interface StoryData {
+  title: string;
+  moral: string;
+  scenes: Scene[];
 }
 
 interface Metadata {
@@ -20,7 +34,7 @@ interface Props {
   storyText: string; 
   imageUrls: string[]; 
   audioUrls: string[];
-  scenes?: Scene[];
+  scenes?: OldScene[];
   metadata?: Metadata;
 }
 
@@ -29,9 +43,47 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [isFlipping, setIsFlipping] = useState(false);
-  
-  const storyScenes = storyText.split('\n\n').filter(scene => scene.trim());
-  const totalScenes = Math.max(storyScenes.length, imageUrls.length, audioUrls.length);
+  const [storyData, setStoryData] = useState<StoryData | null>(null);
+
+  // Parse the story data from JSON
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(storyText);
+      if (parsed.title && parsed.scenes) {
+        setStoryData(parsed);
+      } else {
+        // Fallback for old format
+        setStoryData({
+          title: metadata?.name ? `${metadata.name}'s Adventure` : 'Magical Story',
+          moral: 'Every adventure teaches us something special.',
+          scenes: scenes?.map((scene, index) => ({
+            id: String(index + 1),
+            title: scene.title,
+            caption: scene.description || scene.title,
+            text: storyText.split('\n\n')[index] || scene.description || 'A magical scene unfolds...',
+            emotion_hint: 'gentle'
+          })) || []
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to parse story JSON, using fallback:', error);
+      // Fallback for plain text stories
+      const storyScenes = storyText.split('\n\n').filter(scene => scene.trim());
+      setStoryData({
+        title: metadata?.name ? `${metadata.name}'s Adventure` : 'Magical Story',
+        moral: 'Every adventure teaches us something special.',
+        scenes: storyScenes.map((text, index) => ({
+          id: String(index + 1),
+          title: `Scene ${index + 1}`,
+          caption: text.substring(0, 50) + '...',
+          text: text,
+          emotion_hint: 'gentle'
+        }))
+      });
+    }
+  }, [storyText, scenes, metadata]);
+
+  const totalScenes = storyData?.scenes.length || 0;
 
   useEffect(() => {
     // Clean up previous audio
@@ -99,15 +151,52 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
     }
   };
 
+  if (!storyData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4 flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto mb-4"></div>
+          <p>Loading your magical story...</p>
+        </Card>
+      </div>
+    );
+  }
+
+  const currentSceneData = storyData.scenes[currentScene];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header with metadata - Kid Friendly */}
-        {metadata && (
+        {/* Story Title and Moral - Only show on first page */}
+        {currentScene === 0 && (
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-3 mb-6">
+              <BookOpen className="h-12 w-12 text-yellow-600" />
+              <h1 className="text-6xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
+                {storyData.title}
+              </h1>
+              <Star className="h-10 w-10 text-amber-500" />
+            </div>
+            
+            {/* Moral */}
+            <Card className="max-w-2xl mx-auto p-6 bg-gradient-to-r from-yellow-100 to-amber-100 border-2 border-yellow-300">
+              <div className="flex items-center gap-2 mb-2">
+                <Heart className="h-6 w-6 text-red-500" />
+                <h2 className="text-2xl font-bold text-gray-800">The Heart of the Story</h2>
+              </div>
+              <p className="text-xl text-gray-700 italic font-serif">
+                {storyData.moral}
+              </p>
+            </Card>
+          </div>
+        )}
+
+        {/* Header with metadata - Show on all pages */}
+        {metadata && currentScene > 0 && (
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-3 mb-4">
               <BookOpen className="h-10 w-10 text-yellow-600" />
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
                 {metadata.name}&apos;s Adventure Book
               </h1>
               <Star className="h-8 w-8 text-amber-500" />
@@ -130,7 +219,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
             transition-all duration-500 ease-in-out transform-gpu
             ${isFlipping ? 'scale-95 rotate-y-12' : 'scale-100 rotate-y-0'}
             bg-gradient-to-br from-white via-yellow-50 to-amber-50
-            rounded-3xl min-h-[800px]
+            rounded-3xl min-h-[700px]
           `}>
             
             {/* Book Pages */}
@@ -149,14 +238,12 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                 </div>
 
                 {/* Scene Title */}
-                {scenes && scenes[currentScene] && (
-                  <div className="text-center mb-6 w-full">
-                    <h2 className="text-3xl font-bold text-gray-800 mb-3 font-serif">
-                      {scenes[currentScene].title}
-                    </h2>
-                    <div className="w-16 h-1 bg-gradient-to-r from-yellow-400 to-amber-400 mx-auto rounded-full"></div>
-                  </div>
-                )}
+                <div className="text-center mb-6 w-full">
+                  <h2 className="text-3xl font-bold text-gray-800 mb-3 font-serif">
+                    {currentSceneData.title}
+                  </h2>
+                  <div className="w-16 h-1 bg-gradient-to-r from-yellow-400 to-amber-400 mx-auto rounded-full"></div>
+                </div>
 
                 {/* Image */}
                 <div className="flex-1 w-full flex items-center justify-center max-w-md">
@@ -178,7 +265,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                       <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-xl border-4 border-white">
                         <Image 
                           src={imageToShow} 
-                          alt={scenes?.[currentScene]?.title || `Scene ${currentScene + 1}`}
+                          alt={currentSceneData.title}
                           fill
                           className="object-cover"
                         />
@@ -192,6 +279,13 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                       </div>
                     );
                   })()}
+                </div>
+
+                {/* Caption */}
+                <div className="mt-4 text-center">
+                  <p className="text-lg text-gray-700 italic font-serif bg-white/80 px-4 py-2 rounded-lg shadow-sm">
+                    {currentSceneData.caption}
+                  </p>
                 </div>
               </div>
 
@@ -211,9 +305,16 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                 <div className="flex-1 flex items-center justify-center">
                   <div className="w-full max-w-lg">
                     <p className="text-xl leading-relaxed text-gray-800 font-serif text-justify indent-8 bg-white/70 p-6 rounded-xl shadow-sm border-l-4 border-yellow-400">
-                      {storyScenes[currentScene] || 'Once upon a time, in a magical land far away...'}
+                      {currentSceneData.text}
                     </p>
                   </div>
+                </div>
+
+                {/* Emotion Hint */}
+                <div className="mt-4 text-center">
+                  <Badge variant="outline" className="text-sm px-3 py-1 bg-white/80 border-yellow-300 text-yellow-700">
+                    Feeling: {currentSceneData.emotion_hint}
+                  </Badge>
                 </div>
               </div>
             </div>
