@@ -114,6 +114,7 @@ export class ElevenLabsService {
     const fileName = `audio_${uuidv4()}.mp3`;
 
     try {
+      console.log(`🎵 Uploading audio to R2: ${fileName} (${audioBuffer.length} bytes)`);
       const publicUrl = await r2Service.uploadFile(audioBuffer, fileName, "audio/mpeg", "audio");
       console.log(`✅ Audio uploaded to R2: ${publicUrl}`);
       return {
@@ -123,7 +124,7 @@ export class ElevenLabsService {
         metadata: { voiceId, model, fileSize: audioBuffer.length },
       };
     } catch (r2Error) {
-      console.warn("R2 upload failed for audio, saving locally:", r2Error);
+      console.error(`❌ R2 upload failed for audio ${fileName}:`, r2Error);
       // Fallback: save to public/generated folder
       const fs = await import('fs/promises');
       const path = await import('path');

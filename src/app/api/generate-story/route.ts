@@ -203,6 +203,7 @@ export async function POST(req: Request) {
         : "Use clear, simple sentences with a friendly, upbeat tone.";
 
     // -------- 1) PLAN (strict JSON) --------
+    console.log('📋 Starting story planning phase...');
     const plannerPrompt = `
 Plan a ${getSceneCount()}-scene children's story arc.
 
@@ -228,10 +229,12 @@ Rules:
 - ${readingGuide}
 `;
 
+    console.log('🤖 Calling Gemini for story planning...');
     const { text: planTextRaw } = await generateText({
       model: google("models/gemini-2.5-flash"),
       prompt: plannerPrompt,
     });
+    console.log('✅ Story planning completed, raw response length:', planTextRaw.length);
 
     const planText = planTextRaw
       .replace(/^```json\s*/i, "")
@@ -242,7 +245,10 @@ Rules:
     let plan: { scenes: ScenePlan[] };
     try {
       plan = JSON.parse(planText);
-    } catch {
+      console.log('📋 Story plan parsed successfully, scenes count:', plan.scenes.length);
+    } catch (parseError) {
+      console.error('❌ Failed to parse story plan JSON:', parseError);
+      console.log('📋 Using fallback plan...');
       // Fallback plan
       plan = {
         scenes: Array.from({ length: getSceneCount() }, (_, i) => ({
@@ -267,6 +273,7 @@ Rules:
     }
 
     // -------- 2) WRITE (strict JSON scenes) --------
+    console.log('✍️ Starting story writing phase...');
     const writerPrompt = `
 Write the story from this plan as STRICT JSON:
 {
@@ -292,10 +299,12 @@ Here is the plan JSON:
 ${JSON.stringify(plan)}
 `;
 
+    console.log('🤖 Calling Gemini for story writing...');
     const { text: storyJsonRaw } = await generateText({
       model: google("models/gemini-2.5-flash"),
       prompt: writerPrompt,
     });
+    console.log('✅ Story writing completed, raw response length:', storyJsonRaw.length);
 
     const storyJson = storyJsonRaw
       .replace(/^```json\s*/i, "")
@@ -306,7 +315,10 @@ ${JSON.stringify(plan)}
     let story: { title: string; moral: string; scenes: StoryScene[] };
     try {
       story = JSON.parse(storyJson);
-    } catch {
+      console.log('📖 Story parsed successfully, title:', story.title, 'scenes count:', story.scenes.length);
+    } catch (parseError) {
+      console.error('❌ Failed to parse story JSON:', parseError);
+      console.log('📖 Using fallback story...');
       // emergency fallback from plan
       story = {
         title: `${name} the ${dream} Hero`,
@@ -322,6 +334,9 @@ ${JSON.stringify(plan)}
     }
 
     // -------- 3) IMAGES (Gemini 2.5 Flash Image Preview) --------
+    console.log('🎨 Starting image generation phase...');
+    console.log('🎨 Image style:', imageStyle, 'scenes to generate:', plan.scenes.length);
+
     const styleMap: Record<string, string> = {
       watercolor: "soft watercolor painting with flowing paint effects and gentle color bleeds",
     comic: "bold comic book illustration with cel-shading, vibrant colors and clear black outlines; emphasize dynamic, heroic poses and dramatic panel-style composition",
@@ -337,6 +352,7 @@ ${JSON.stringify(plan)}
     let fileIndex = 0;
 
     for (const p of plan.scenes) {
+      console.log(`🖼️ Generating image for scene ${p.id}: ${p.title}`);
       const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
       if (referenceImageParts.length > 0) {
         referenceImageParts.forEach(part => parts.push(part));
@@ -357,6 +373,7 @@ ${JSON.stringify(plan)}
       parts.push({ text: visual });
 
       try {
+        console.log(`🤖 Calling Gemini image generation for scene ${p.id}...`);
         const response = await ai.models.generateContentStream({
           model: "gemini-2.5-flash-image-preview",
           contents: [{ role: "user", parts }],
@@ -373,8 +390,10 @@ ${JSON.stringify(plan)}
           const name = `${uuidv4()}_${fileIndex++}.${ext}`;
 
           try {
+            console.log(`☁️ Uploading image ${p.id} to R2...`);
             const url = await r2Service.uploadFile(buffer, name, inline.mimeType || "image/png", "images");
             imageUrls.push(url);
+            console.log(`✅ Image ${p.id} uploaded successfully:`, url);
           } catch (r2Error) {
             console.warn("R2 upload failed, saving to local public folder:", r2Error);
             // Fallback: save to public/generated folder
@@ -389,14 +408,21 @@ ${JSON.stringify(plan)}
           done = true;
           break;
         }
-        if (!done) imageUrls.push("/placeholder-image.svg");
+        if (!done) {
+          console.warn(`⚠️ No image generated for scene ${p.id}, using placeholder`);
+          imageUrls.push("/placeholder-image.svg");
+        }
       } catch (e) {
-        console.error("Image gen error:", e);
+        console.error(`❌ Image generation error for scene ${p.id}:`, e);
         imageUrls.push("/placeholder-image.svg");
       }
     }
 
+    console.log('🎨 Image generation completed, total images:', imageUrls.length);
+
     // -------- 4) AUDIO (ElevenLabs v3 + tags) --------
+    console.log('🎵 Starting audio generation phase...');
+    console.log('🎵 Voice preset:', voicePreset, 'designed voice ID:', designedVoiceId || 'none');
     // Build expressive narration
     const mode: "playful" | "epic" | "narrator" =
       voicePreset === "playful_hero" ? "playful" :
@@ -430,6 +456,7 @@ ${JSON.stringify(plan)}
     const style = clamp(guidance / 100, 0.1, 1);
     const similarity_boost = clamp(loudness / 100, 0.6, 1);
 
+    console.log('🎵 Calling ElevenLabs for audio generation...');
     const audioResults = await elevenLabsService.generateBatchAudio(chunks, {
       voiceId: chosenVoiceId,
       model: ElevenLabsService.MODELS.ELEVEN_V3, // Updated to use ELEVEN_V3
@@ -443,8 +470,10 @@ ${JSON.stringify(plan)}
     });
 
     const audioUrls = audioResults.map((r) => r.publicUrl || "");
+    console.log('🎵 Audio generation completed, total audio files:', audioUrls.length);
 
     // -------- 5) Persist & respond --------
+    console.log('💾 Saving story to database...');
     const storyId = uuidv4();
 
     try {
@@ -472,6 +501,7 @@ ${JSON.stringify(plan)}
         },
         isPublic,
       } as typeof storiesTable.$inferInsert);
+      console.log('💾 Story saved to database successfully');
     } catch (dbErr) {
       console.error("DB insert failed:", dbErr);
       return NextResponse.json(
@@ -479,6 +509,16 @@ ${JSON.stringify(plan)}
         { status: 500 }
       );
     }
+
+    console.log('🎉 Story generation completed successfully!');
+    console.log('📊 Final summary:', {
+      storyId,
+      title: story.title,
+      scenesCount: story.scenes.length,
+      imagesGenerated: imageUrls.length,
+      audioGenerated: audioUrls.length,
+      savedToDatabase: true
+    });
 
     return NextResponse.json({
       storyId,

@@ -205,7 +205,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
               <Badge variant="secondary" className="text-lg px-4 py-2 rounded-full bg-yellow-100 text-yellow-800 border-yellow-200">
                 ✨ Dream: {metadata.dream}
               </Badge>
-              <Badge variant="secondary" className="text-lg px-4 py-2 rounded-full bg-amber-100 text-amber-800 border-amber-200">
+              <Badge variant="secondary" className="whitespace-normal break-words text-lg px-4 py-2 rounded-full bg-amber-100 text-amber-800 border-amber-200">
                 🌟 {metadata.personality}
               </Badge>
             </div>
