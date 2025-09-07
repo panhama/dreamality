@@ -7,9 +7,9 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'http',
+        protocol: 'https',
         hostname: 'apis3.aurelonlabs.com',
-        port: '9002',
+        port: '9000',
         pathname: '/dreamlity/images/**',
       },
     ],

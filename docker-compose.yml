@@ -1,0 +1,24 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+    depends_on:
+      - db
+      - minio
+    networks:
+      - internal-network
+
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  internal-network:
+    external: true
