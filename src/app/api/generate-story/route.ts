@@ -11,8 +11,7 @@ import { ElevenLabsService, elevenLabsService } from '@/lib/ai/elevenlabs';
 import { google } from '@/lib/ai/ai';
 import { db } from '@/lib/db';
 import { stories as storiesTable } from '@/lib/db/schema';  
-// ElevenLabs service (no longer needed - using the new service)
-// const elevenlabs = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY! });
+
 
 // Temp dir for images (use Vercel Blob in production)
 const TEMP_DIR = path.join(process.cwd(), 'public', 'generated');

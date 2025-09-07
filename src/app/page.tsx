@@ -1,10 +1,11 @@
 'use client';
 import { Button, Input, Textarea, Card, Label, Badge, Separator } from '@/components/ui/index';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Upload, Sparkles, User, Heart, Palette, Settings as SettingsIcon } from 'lucide-react';
 import Switch from '@/components/ui/toggle';
+import GenerationProgress from '@/components/GenerationProgress';
 
 export default function Home() {
   // required fields
@@ -30,11 +31,21 @@ export default function Home() {
   const [imageStyle, setImageStyle] = useState<'watercolor'|'storybook'|'comic'|'paper_cut'>('storybook');
 
   const [isLoading, setIsLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Cleanup effect for when component unmounts or navigation occurs
+  useEffect(() => {
+    return () => {
+      setIsLoading(false);
+      setCurrentStep(0);
+    };
+  }, []);
+
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setCurrentStep(1);
 
     try {
       const formData = new FormData();
@@ -54,14 +65,21 @@ export default function Home() {
       formData.append('storyLength', storyLength);
       formData.append('imageStyle', imageStyle);
       formData.append('isPublic', String(isPublic));
+      formData.append('isPublic', String(isPublic));
+
+      // Simulate progress through steps
+      setTimeout(() => setCurrentStep(2), 2000); // Move to writing step
+      setTimeout(() => setCurrentStep(3), 8000); // Move to image generation
+      setTimeout(() => setCurrentStep(4), 18000); // Move to audio generation
 
       const res = await fetch('/api/generate-story', { method: 'POST', body: formData });
       const { storyId } = await res.json();
       router.push(`/story/${storyId}`);
     } catch (error) {
       console.error('Error generating story:', error);
-    } finally {
       setIsLoading(false);
+      setCurrentStep(0);
+      // You could add a toast notification here for user feedback
     }
   };
 
@@ -257,17 +275,10 @@ export default function Home() {
                          hover:from-yellow-700 hover:to-amber-700 disabled:opacity-50 disabled:cursor-not-allowed
                          shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
             >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Creating your magical story...
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
-                  Generate My Surprise Story
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                Generate My Surprise Story
+              </div>
             </Button>
           </form>
                <div className="text-center mt-8 text-sm text-gray-500">
@@ -278,6 +289,9 @@ export default function Home() {
         {/* Footer */}
    
       </div>
+
+      {/* Generation Progress Modal */}
+      <GenerationProgress currentStep={currentStep} isLoading={isLoading} />
     </div>
   );
 }
