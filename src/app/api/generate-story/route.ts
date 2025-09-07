@@ -33,55 +33,114 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-// Add expressive audio tags without mentioning age.
-// You can tweak the heuristics to taste.
+// Enhanced expressive audio tags for ElevenLabs v3
+// Supports comprehensive tagging system for:
+// 1. Pacing & Demeanor: [slowly], [quickly], [hesitant], [whisper], [urgently], [calmly]
+// 2. Vocal Effects: [higher pitch], [lower pitch], [soft volume], [loud], [strong], [breathy], [nasal]
+// 3. Breaths & Pauses: [quick breath], [deep breath], [sigh], [giggle], [light chuckle], [laugh], [pause], [beat]
+// Tags are automatically filtered from frontend display using regex: /\[([^\]]+)\]/g
 function tagLine(base: string, hint: string, i: number) {
   const t = base.trim();
+  const hint_lower = hint.toLowerCase();
 
-  // Gentle heuristics
-  const excited = /\!|let.?s go|ready|woo+/i.test(t);
-  const serious = /(focus|careful|listen|danger|stay calm|steady)/i.test(t);
-  const gentle  = /(it’s okay|you’re safe|all right|we’re here)/i.test(t);
-  const laugh   = /(we did it|hooray|yay|awesome)/i.test(t);
-  const whoosh  = /(spray|hose|truck|sir(en)?|whoosh|roar)/i.test(t);
-
+  // Emotion-based tagging with v3 tags
   const tags: string[] = [];
-  if (hint.includes("excited") || excited) tags.push("excited");
-  if (hint.includes("serious") || serious) tags.push("serious");
-  if (hint.includes("gentle")  || gentle)  tags.push("gentle");
-  if (laugh) tags.push("laughs softly");
-  if (whoosh) tags.push("sfx: whoosh");
 
-  // Add breaths/pacing
-  if (i === 0) tags.unshift("smiling");
-  if (t.length > 90) tags.push("quick breath");
+  // Pacing & Demeanor
+  if (hint_lower.includes("excited") || /\!|let.?s go|ready|woo+|yay|hooray/i.test(t)) {
+    tags.push("quickly", "higher pitch");
+  }
+  if (hint_lower.includes("serious") || /(focus|careful|listen|danger|stay calm|steady)/i.test(t)) {
+    tags.push("calmly", "lower pitch");
+  }
+  if (hint_lower.includes("gentle") || /(it.?s okay|you.?re safe|all right|we.?re here)/i.test(t)) {
+    tags.push("slowly", "soft volume");
+  }
+  if (hint_lower.includes("urgent") || /(hurry|quick|fast|rush)/i.test(t)) {
+    tags.push("urgently");
+  }
+  if (hint_lower.includes("hesitant") || /(maybe|perhaps|um|uh)/i.test(t)) {
+    tags.push("hesitant");
+  }
+  if (hint_lower.includes("whisper") || /(secret|quiet|shh)/i.test(t)) {
+    tags.push("whisper");
+  }
 
-  const prefix = tags.length ? `[${tags.join(", ")}] ` : "";
+  // Vocal Effects & Prosodic Variation
+  if (hint_lower.includes("loud") || /(shout|yell|boom|crash)/i.test(t)) {
+    tags.push("loud", "strong");
+  }
+  if (hint_lower.includes("breathy") || /(wind|sigh|breath)/i.test(t)) {
+    tags.push("breathy");
+  }
+  if (hint_lower.includes("soft") || /(gentle|quiet|whisper)/i.test(t)) {
+    tags.push("soft volume");
+  }
+
+  // Breaths, Laughter, and Pauses
+  if (hint_lower.includes("laugh") || /(ha|hee|hooray|yay|awesome|we did it)/i.test(t)) {
+    const laughTags = ["giggle", "light chuckle", "laugh"];
+    tags.push(laughTags[Math.floor(Math.random() * laughTags.length)]);
+  }
+  if (hint_lower.includes("sigh") || /(oh|ah|wow|phew)/i.test(t)) {
+    tags.push("sigh");
+  }
+
+  // Add breaths/pacing based on context
+  if (i === 0) tags.unshift("smiling"); // Start with a smile
+  if (t.length > 90) tags.push("quick breath"); // Long sentences need breath
+  if (t.includes("?")) tags.push("beat"); // Questions get a dramatic pause
+  if (t.includes("!")) tags.push("pause"); // Exclamation gets a pause
+
+  // Remove duplicates and join
+  const uniqueTags = [...new Set(tags)];
+  const prefix = uniqueTags.length ? `[${uniqueTags.join(", ")}] ` : "";
   return prefix + t;
 }
 
 function buildNarrationScript(scenes: StoryScene[], mode: "narrator"|"playful"|"epic", pace: "slow"|"normal"|"fast") {
-  const speedIntro =
-    pace === "fast" ? "[higher pitch] " :
-    pace === "slow" ? "[soft, slow] " :
-    "";
+  const globalPaceTag =
+    pace === "fast" ? "quickly" :
+    pace === "slow" ? "slowly" :
+    "calmly";
+
   const lines: string[] = [];
+
   for (const s of scenes) {
     const sentences = s.text.split(/(?<=[.!?])\s+/).filter(Boolean);
     const hint = s.emotion_hint.toLowerCase();
-    lines.push(`[pause]`); // page turn
+
+    // Page turn pause
+    lines.push(`[pause]`);
+
+    // Mode-specific introduction
     if (mode === "playful") {
-      // Light first-person reframe without impersonation words
-      lines.push(tagLine(`${speedIntro}${s.caption}`, hint, 0));
-      sentences.forEach((sent, i) => lines.push(tagLine(sent, hint, i + 1)));
+      lines.push(tagLine(`[${globalPaceTag}, smiling] ${s.caption}`, hint, 0));
     } else if (mode === "epic") {
-      lines.push(tagLine(`[deep, cinematic] ${s.caption}`, "serious", 0));
-      sentences.forEach((sent, i) => lines.push(tagLine(sent, hint || "serious", i + 1)));
+      lines.push(tagLine(`[${globalPaceTag}, lower pitch, strong] ${s.caption}`, "serious", 0));
     } else {
-      lines.push(tagLine(`${speedIntro}${s.caption}`, hint, 0));
-      sentences.forEach((sent, i) => lines.push(tagLine(sent, hint || "gentle", i + 1)));
+      lines.push(tagLine(`[${globalPaceTag}] ${s.caption}`, hint, 0));
     }
+
+    // Process each sentence with appropriate tags
+    sentences.forEach((sent, i) => {
+      let processedSentence = sent;
+
+      // Add sentence-specific effects
+      if (sent.includes("!") && hint.includes("excited")) {
+        processedSentence = tagLine(sent, "excited", i + 1);
+      } else if (sent.includes("?")) {
+        processedSentence = tagLine(sent, "hesitant", i + 1);
+      } else if (sent.includes("...")) {
+        processedSentence = tagLine(sent, "slowly", i + 1);
+      } else {
+        processedSentence = tagLine(sent, hint || "gentle", i + 1);
+      }
+
+      lines.push(processedSentence);
+    });
   }
+
   return lines.join(" ");
 }
 
@@ -204,18 +263,26 @@ Rules:
 
     // -------- 2) WRITE (strict JSON scenes) --------
     const writerPrompt = `
-Write the story from this plan as STRICT JSON: 
+Write the story from this plan as STRICT JSON:
 {
   "title": "Picture-book title",
   "moral": "Short positive moral",
   "scenes": [
-    { "id": "1", "title":"", "caption":"", "text":"2–4 short sentences", "emotion_hint":"excited|serious|gentle|encouraging" }
+    {
+      "id": "1",
+      "title":"",
+      "caption":"",
+      "text":"2–4 short sentences",
+      "emotion_hint":"excited|serious|gentle|hesitant|urgent|whisper|loud|breathy|soft|calm|quick|slow"
+    }
   ]
 }
 Constraints:
 - ${readingGuide}
 - Keep ${name} consistent; uplifting, brave, kind tone.
 - Use everyday vocabulary; no on-image text; no violence.
+- For emotion_hint, choose the most appropriate from: excited, serious, gentle, hesitant, urgent, whisper, loud, breathy, soft, calm, quick, slow
+- Match emotion_hint to the scene's mood and action
 Here is the plan JSON:
 ${JSON.stringify(plan)}
 `;

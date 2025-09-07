@@ -56,10 +56,10 @@ config({ path: path.join(process.cwd(), '.env') });
 // }
 
 async function generateTestAudio(): Promise<string> {
-  console.log("🎵 Generating test audio...");
+  console.log("🎵 Generating test audio with v3 tags...");
 
   const elevenLabs = new ElevenLabsService(process.env.ELEVENLABS_API_KEY);
-  const text = "Hello! This is a test of the ElevenLabs audio generation system. The robot and the child are working together happily.";
+  const text = "[excited, quickly] Hello! This is a test of the ElevenLabs v3 tagging system! [pause] [whisper] Can you hear me now? [loud] Wow, this is amazing! [sigh] What a relief. [giggle] Hee hee! [calmly] Everything is working perfectly.";
 
   try {
     const result = await elevenLabs.generateAudio({
@@ -77,6 +77,8 @@ async function generateTestAudio(): Promise<string> {
 
     console.log(`✅ Audio uploaded: ${result.publicUrl}`);
     console.log(`📊 Audio metadata: ${result.metadata.voiceId}, ${result.metadata.model}, ${result.metadata.fileSize} bytes`);
+    console.log(`🎭 Original text with tags: "${text}"`);
+    console.log(`📝 Display text (tags filtered): "${text.replace(/\[([^\]]+)\]/g, '').trim()}"`);
     return result.publicUrl;
   } catch (error) {
     console.error("❌ Audio generation failed:", error);

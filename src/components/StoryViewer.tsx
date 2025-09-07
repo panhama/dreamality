@@ -219,7 +219,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
             transition-all duration-500 ease-in-out transform-gpu
             ${isFlipping ? 'scale-95 rotate-y-12' : 'scale-100 rotate-y-0'}
             bg-gradient-to-br from-white via-yellow-50 to-amber-50
-            rounded-3xl min-h-[700px]
+            rounded-3xl min-h-[800px]
           `}>
             
             {/* Book Pages */}
@@ -284,7 +284,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                 {/* Caption */}
                 <div className="mt-4 text-center">
                   <p className="text-lg text-gray-700 italic font-serif bg-white/80 px-4 py-2 rounded-lg shadow-sm">
-                    {currentSceneData.caption}
+                    {currentSceneData.caption.replace(/\[([^\]]+)\]/g, '').trim()}
                   </p>
                 </div>
               </div>
@@ -305,7 +305,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                 <div className="flex-1 flex items-center justify-center">
                   <div className="w-full max-w-lg">
                     <p className="text-xl leading-relaxed text-gray-800 font-serif text-justify indent-8 bg-white/70 p-6 rounded-xl shadow-sm border-l-4 border-yellow-400">
-                      {currentSceneData.text}
+                      {currentSceneData.text.replace(/\[([^\]]+)\]/g, '').trim()}
                     </p>
                   </div>
                 </div>
