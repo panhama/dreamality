@@ -348,13 +348,14 @@ ${JSON.stringify(plan)}
 
     const elevenLabsService = new ElevenLabsService();
 
-    const stability = clamp(1 - energy / 100, 0.25, 0.85);
+    // For v3 API, stability must be one of [0.0, 0.5, 1.0]
+    const stability = energy < 33 ? 0.0 : energy < 66 ? 0.5 : 1.0; // 0.0 = Creative, 0.5 = Natural, 1.0 = Robust
     const style = clamp(guidance / 100, 0.1, 1);
     const similarity_boost = clamp(loudness / 100, 0.6, 1);
 
     const audioResults = await elevenLabsService.generateBatchAudio(chunks, {
       voiceId: chosenVoiceId,
-      model: ElevenLabsService.MODELS.TURBO_V2_5, // Using turbo_v2_5 which works reliably
+      model: ElevenLabsService.MODELS.ELEVEN_V3, // Updated to use ELEVEN_V3
       voiceSettings: {
         stability,
         similarity_boost,

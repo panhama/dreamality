@@ -1,5 +1,4 @@
 // lib/ai/elevenlabs.ts
-import { ElevenLabsClient } from "elevenlabs";
 import { v4 as uuidv4 } from "uuid";
 import { minIOService } from "@/lib/minio";
 
@@ -32,7 +31,7 @@ export interface AudioResult {
 }
 
 export class ElevenLabsService {
-  private client: ElevenLabsClient;
+  private apiKey: string;
 
   static readonly VOICES = {
     ALLOY:  "pNInz6obpgDQGcFmaJgB",
@@ -52,17 +51,16 @@ export class ElevenLabsService {
   };
 
   constructor(apiKey?: string) {
-    const key = apiKey || process.env.ELEVENLABS_API_KEY;
-    if (!key) throw new Error("ElevenLabs API key is required");
-    this.client = new ElevenLabsClient({ apiKey: key });
+    this.apiKey = apiKey || process.env.ELEVENLABS_API_KEY || "";
+    if (!this.apiKey) throw new Error("ElevenLabs API key is required");
   }
 
   async generateAudio(options: AudioGenerationOptions): Promise<AudioResult> {
     const {
       text,
       voiceId = ElevenLabsService.VOICES.RACHEL,
-      model = ElevenLabsService.MODELS.TURBO_V2_5, // Changed from ELEVEN_V3 to TURBO_V2_5
-      voiceSettings = { stability: 0.55, similarity_boost: 0.8, style: 0.25, use_speaker_boost: true },
+      model = ElevenLabsService.MODELS.ELEVEN_V3, // Updated to use ELEVEN_V3 as default
+      voiceSettings = { stability: 0.5, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
       outputFormat = "mp3_44100_128",
       seed,
       optimizeStreamingLatency = 2,
@@ -74,44 +72,50 @@ export class ElevenLabsService {
     console.log(`   Model: ${model}`);
     console.log(`   ENABLE_ELEVENLABS_AUDIO: ${process.env.ENABLE_ELEVENLABS_AUDIO}`);
 
-    console.log(`🎵 ElevenLabs generateAudio called:`);
-    console.log(`   Text: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
-    console.log(`   Voice: ${voiceId}`);
-    console.log(`   Model: ${model}`);
-    console.log(`   ENABLE_ELEVENLABS_AUDIO: ${process.env.ENABLE_ELEVENLABS_AUDIO}`);
-
     if (process.env.ENABLE_ELEVENLABS_AUDIO !== "1") {
       throw new Error("ElevenLabs audio generation disabled (ENABLE_ELEVENLABS_AUDIO != 1).");
     }
 
-    const audio = await this.client.textToSpeech.convert(voiceId, {
+    // Use direct API call to ElevenLabs v3 endpoint
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+
+    const requestBody = {
       text,
       model_id: model,
       voice_settings: voiceSettings,
       output_format: outputFormat,
       ...(seed != null ? { seed } : {}),
       optimize_streaming_latency: optimizeStreamingLatency,
+    };
+
+    console.log(`🎵 Making direct API call to: ${url}`);
+    console.log(`   Request body:`, JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': this.apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg',
+      },
+      body: JSON.stringify(requestBody),
     });
 
-    // Normalize all response shapes to Buffer
-    let audioBuffer: Buffer;
-    if (audio instanceof Buffer) {
-      audioBuffer = audio;
-    } else if (audio && typeof audio === "object" && Symbol.asyncIterator in audio) {
-      const chunks: Uint8Array[] = [];
-      for await (const chunk of audio as AsyncIterable<Uint8Array>) chunks.push(chunk);
-      audioBuffer = Buffer.concat(chunks.map((c) => Buffer.from(c)));
-    } else if (audio && typeof audio === "object" && "arrayBuffer" in audio && typeof (audio as { arrayBuffer: unknown }).arrayBuffer === "function") {
-      const arr = await (audio as { arrayBuffer: () => Promise<ArrayBuffer> }).arrayBuffer();
-      audioBuffer = Buffer.from(arr);
-    } else {
-      throw new Error(`Unsupported audio response type: ${typeof audio}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`ElevenLabs API error: ${response.status} ${response.statusText}`);
+      console.error(`Error details:`, errorText);
+      throw new Error(`ElevenLabs API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
+    // Get the audio data as buffer
+    const audioBuffer = Buffer.from(await response.arrayBuffer());
+
     const fileName = `audio_${uuidv4()}.mp3`;
-    
+
     try {
       const publicUrl = await minIOService.uploadFile(audioBuffer, fileName, "audio/mpeg", "audio");
+      console.log(`✅ Audio uploaded to MinIO: ${publicUrl}`);
       return {
         audioBuffer,
         fileName,
@@ -128,7 +132,7 @@ export class ElevenLabsService {
       await fs.writeFile(path.join(publicDir, fileName), audioBuffer);
       const localUrl = `/generated/${fileName}`;
       console.log(`✓ Audio saved locally: ${localUrl}`);
-      
+
       return {
         audioBuffer,
         fileName,
@@ -158,6 +162,31 @@ export class ElevenLabsService {
     return out;
   }
 
-  async getVoices() { return (await this.client.voices.getAll()).voices; }
-  async getVoice(voiceId: string) { return this.client.voices.get(voiceId); }
+  async getVoices() {
+    const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+      headers: {
+        'xi-api-key': this.apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get voices: ${response.status} ${response.statusText}`);
+    }
+
+    return (await response.json()).voices;
+  }
+
+  async getVoice(voiceId: string) {
+    const response = await fetch(`https://api.elevenlabs.io/v1/voices/${voiceId}`, {
+      headers: {
+        'xi-api-key': this.apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get voice: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  }
 }
