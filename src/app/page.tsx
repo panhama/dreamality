@@ -82,8 +82,8 @@ export default function Home() {
     <div className="bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50">
     <div className="min-h-screen p-3 flex items-center justify-center">
       {/* floating background decorations */}
-      <div className="pointer-events-none absolute z-50 left-0 top-20 rounded-xl overflow-hidden w-36 h-36 animate-float-slow">
-      <Image src="/decorations/firefighter-superman.png" alt="decoration" fill style={{ objectFit: "cover" }} priority={false} />
+      <div className="hidden sm:block pointer-events-none absolute z-50 left-0 top-20 rounded-xl overflow-hidden w-36 h-36 animate-float-slow">
+        <Image src="/decorations/firefighter-superman.png" alt="decoration" fill style={{ objectFit: "cover" }} priority={false} />
       </div>
       {/* <div className="pointer-events-none absolute right-6 bottom-24 opacity-70 rounded-xl overflow-hidden w-48 h-48 animate-float-slower">
         <Image src="/decorations/superman-kid.jpg" alt="decoration" fill style={{ objectFit: "cover" }} priority={false} />
