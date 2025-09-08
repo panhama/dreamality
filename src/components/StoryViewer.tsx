@@ -46,7 +46,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
   const [storyData, setStoryData] = useState<StoryData | null>(null);
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [readingTimer, setReadingTimer] = useState<NodeJS.Timeout | null>(null);
-  const [isAutoAdvancing, setIsAutoAdvancing] = useState(false);
+  const [previousScene, setPreviousScene] = useState(-1);
 
   // Parse the story data from JSON
   useEffect(() => {
@@ -108,9 +108,12 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
   // Auto-advance to next scene
   const autoAdvanceToNext = () => {
     if (autoAdvance && currentScene < totalScenes - 1 && !isFlipping) {
-      setIsAutoAdvancing(true);
       setTimeout(() => {
-        nextScene();
+        setIsFlipping(true);
+        setTimeout(() => {
+          setCurrentScene(currentScene + 1);
+          setIsFlipping(false);
+        }, 300);
       }, 1000); // Small delay for smooth transition
     }
   };
@@ -140,6 +143,10 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
       setReadingTimer(null);
     }
 
+    // Determine if this is an auto-advance (scene increased by 1)
+    const wasAutoAdvanced = previousScene >= 0 && currentScene === previousScene + 1;
+    setPreviousScene(currentScene);
+
     // Set up new audio if available
     if (audioUrls[currentScene]) {
       const audio = new Audio(audioUrls[currentScene]);
@@ -147,23 +154,22 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
       setAudioElement(audio);
 
       // Auto-play if this scene change was due to auto-advance
-      if (autoAdvance && isAutoAdvancing) {
+      if (autoAdvance && wasAutoAdvanced) {
         setTimeout(() => {
           audio.play();
           setIsPlaying(true);
-          setIsAutoAdvancing(false); // Reset the flag
         }, 300); // Wait for page flip animation to complete
+      } else {
+        setIsPlaying(false); // Only set to false if not auto-playing
       }
     } else {
       setAudioElement(null);
-      setIsAutoAdvancing(false); // Reset the flag for text-only scenes
+      setIsPlaying(false); // No audio, so not playing
       // Set up reading timer for text-only scenes
       if (storyData?.scenes[currentScene]) {
         setupReadingTimer(storyData.scenes[currentScene].text);
       }
     }
-
-    setIsPlaying(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentScene, audioUrls, storyData]);
 
@@ -185,7 +191,6 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
         clearTimeout(readingTimer);
         setReadingTimer(null);
       }
-      setIsAutoAdvancing(false); // Reset auto-advance flag when manually playing
       audioElement.play();
       setIsPlaying(true);
     }
@@ -198,7 +203,6 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
         clearTimeout(readingTimer);
         setReadingTimer(null);
       }
-      setIsAutoAdvancing(false); // Reset auto-advance flag for manual navigation
       setIsFlipping(true);
       setTimeout(() => {
         setCurrentScene(currentScene + 1);
@@ -214,7 +218,6 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
         clearTimeout(readingTimer);
         setReadingTimer(null);
       }
-      setIsAutoAdvancing(false); // Reset auto-advance flag for manual navigation
       setIsFlipping(true);
       setTimeout(() => {
         setCurrentScene(currentScene - 1);
@@ -230,7 +233,6 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
         clearTimeout(readingTimer);
         setReadingTimer(null);
       }
-      setIsAutoAdvancing(false); // Reset auto-advance flag for manual navigation
       setIsFlipping(true);
       setTimeout(() => {
         setCurrentScene(sceneIndex);
