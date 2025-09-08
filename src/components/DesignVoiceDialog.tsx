@@ -83,7 +83,7 @@ export function DesignVoiceDialog({ preset, onVoiceCreated }: Props) {
       <DialogTrigger asChild>
         <Button
           size="default"
-className="bg-gradient-to-r from-red-600 to-yellow-500 text-white hover:from-red-600 hover:to-yellow-600 border-0 shadow-lg transform transition-transform duration-200 hover:scale-105 mr-2"        >
+className="cursor-pointer bg-gradient-to-r from-red-600 to-yellow-500 text-white hover:from-red-600 hover:to-yellow-600 border-0 shadow-lg transform transition-transform duration-200 hover:scale-105 mr-2"        >
           <Sparkles className="h-5 w-5 mr-2" />
           Design / Select Voice
         </Button>
