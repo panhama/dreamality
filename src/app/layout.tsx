@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -27,8 +28,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Analytics script (Paynext) - deferred to after interactive load */}
+        <Script
+          src="https://analytics.paynext.app/script.js"
+          strategy="afterInteractive"
+          data-website-id="72caaa5b-2adb-470b-a106-b17e9028aebb"
+        />
+
         {children}
-        
+
       </body>
       
     </html>
