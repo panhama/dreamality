@@ -1,4 +1,4 @@
-// lib/ai/prompts.ts
+
 
 export type ReadingLevel = "early" | "primary" | "preteen";
 

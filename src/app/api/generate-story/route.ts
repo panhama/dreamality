@@ -1,4 +1,3 @@
-// app/api/generate-story/route.ts
 import { NextResponse } from "next/server";
 import mime from "mime";
 import { v4 as uuidv4 } from "uuid";
@@ -10,7 +9,6 @@ import { r2Service } from "@/lib/r2";
 import { db } from "@/lib/db";
 import { stories as storiesTable } from "@/lib/db/schema";
 
-// This route needs Node APIs (Buffer/R2), not Edge.
 export const runtime = "nodejs";
 
 type ScenePlan = {

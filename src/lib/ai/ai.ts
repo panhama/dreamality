@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText } from 'ai';  // Vercel AI SDK v5 core
+import { generateText } from 'ai'; 
 
 export const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY!,
