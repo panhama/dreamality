@@ -309,7 +309,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
             transition-all duration-500 ease-in-out transform-gpu
             ${isFlipping ? 'scale-95 rotate-y-12' : 'scale-100 rotate-y-0'}
             bg-gradient-to-br from-white via-yellow-50 to-amber-50
-            rounded-3xl min-h-[850px]
+            rounded-3xl min-h-[880px]
           `}>
             
             {/* Book Pages */}
