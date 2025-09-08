@@ -44,6 +44,9 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [isFlipping, setIsFlipping] = useState(false);
   const [storyData, setStoryData] = useState<StoryData | null>(null);
+  const [autoAdvance, setAutoAdvance] = useState(true);
+  const [readingTimer, setReadingTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isAutoAdvancing, setIsAutoAdvancing] = useState(false);
 
   // Parse the story data from JSON
   useEffect(() => {
@@ -83,13 +86,58 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
     }
   }, [storyText, scenes, metadata]);
 
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (readingTimer) {
+        clearTimeout(readingTimer);
+      }
+    };
+  }, [readingTimer]);
+
   const totalScenes = storyData?.scenes.length || 0;
 
+  // Calculate reading time based on text length (average 200 words per minute)
+  const calculateReadingTime = (text: string) => {
+    const wordsPerMinute = 200;
+    const wordCount = text.split(' ').length;
+    const readingTimeSeconds = Math.max((wordCount / wordsPerMinute) * 60, 5); // Minimum 5 seconds
+    return readingTimeSeconds * 1000; // Convert to milliseconds
+  };
+
+  // Auto-advance to next scene
+  const autoAdvanceToNext = () => {
+    if (autoAdvance && currentScene < totalScenes - 1 && !isFlipping) {
+      setIsAutoAdvancing(true);
+      setTimeout(() => {
+        nextScene();
+      }, 1000); // Small delay for smooth transition
+    }
+  };
+
+  // Set up reading timer for text-only scenes
+  const setupReadingTimer = (text: string) => {
+    if (readingTimer) {
+      clearTimeout(readingTimer);
+    }
+    
+    if (autoAdvance && !audioUrls[currentScene]) {
+      const timer = setTimeout(() => {
+        autoAdvanceToNext();
+      }, calculateReadingTime(text));
+      setReadingTimer(timer);
+    }
+  };
+
   useEffect(() => {
-    // Clean up previous audio
+    // Clean up previous audio and timer
     if (audioElement) {
       audioElement.pause();
       audioElement.removeEventListener('ended', handleAudioEnd);
+    }
+    if (readingTimer) {
+      clearTimeout(readingTimer);
+      setReadingTimer(null);
     }
 
     // Set up new audio if available
@@ -97,16 +145,32 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
       const audio = new Audio(audioUrls[currentScene]);
       audio.addEventListener('ended', handleAudioEnd);
       setAudioElement(audio);
+
+      // Auto-play if this scene change was due to auto-advance
+      if (autoAdvance && isAutoAdvancing) {
+        setTimeout(() => {
+          audio.play();
+          setIsPlaying(true);
+          setIsAutoAdvancing(false); // Reset the flag
+        }, 300); // Wait for page flip animation to complete
+      }
     } else {
       setAudioElement(null);
+      setIsAutoAdvancing(false); // Reset the flag for text-only scenes
+      // Set up reading timer for text-only scenes
+      if (storyData?.scenes[currentScene]) {
+        setupReadingTimer(storyData.scenes[currentScene].text);
+      }
     }
-    
+
     setIsPlaying(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentScene, audioUrls]);
+  }, [currentScene, audioUrls, storyData]);
 
   const handleAudioEnd = () => {
     setIsPlaying(false);
+    // Auto-advance after audio ends
+    autoAdvanceToNext();
   };
 
   const toggleAudio = () => {
@@ -116,6 +180,12 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
       audioElement.pause();
       setIsPlaying(false);
     } else {
+      // Clear reading timer when starting audio playback
+      if (readingTimer) {
+        clearTimeout(readingTimer);
+        setReadingTimer(null);
+      }
+      setIsAutoAdvancing(false); // Reset auto-advance flag when manually playing
       audioElement.play();
       setIsPlaying(true);
     }
@@ -123,6 +193,12 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
 
   const nextScene = () => {
     if (currentScene < totalScenes - 1) {
+      // Clear any pending auto-advance timer
+      if (readingTimer) {
+        clearTimeout(readingTimer);
+        setReadingTimer(null);
+      }
+      setIsAutoAdvancing(false); // Reset auto-advance flag for manual navigation
       setIsFlipping(true);
       setTimeout(() => {
         setCurrentScene(currentScene + 1);
@@ -133,6 +209,12 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
 
   const prevScene = () => {
     if (currentScene > 0) {
+      // Clear any pending auto-advance timer
+      if (readingTimer) {
+        clearTimeout(readingTimer);
+        setReadingTimer(null);
+      }
+      setIsAutoAdvancing(false); // Reset auto-advance flag for manual navigation
       setIsFlipping(true);
       setTimeout(() => {
         setCurrentScene(currentScene - 1);
@@ -143,6 +225,12 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
 
   const goToScene = (sceneIndex: number) => {
     if (sceneIndex !== currentScene) {
+      // Clear any pending auto-advance timer
+      if (readingTimer) {
+        clearTimeout(readingTimer);
+        setReadingTimer(null);
+      }
+      setIsAutoAdvancing(false); // Reset auto-advance flag for manual navigation
       setIsFlipping(true);
       setTimeout(() => {
         setCurrentScene(sceneIndex);
@@ -337,12 +425,37 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
 
                 {/* Center Audio Controls */}
                 <div className="flex flex-col items-center gap-3">
+                  {/* Auto-advance Toggle */}
+                  <div className="flex items-center gap-2 bg-white/90 px-4 py-2 rounded-full shadow-sm">
+                    <span className="text-sm font-medium text-gray-700">Auto-advance:</span>
+                    <button
+                      onClick={() => {
+                        setAutoAdvance(!autoAdvance);
+                        if (!autoAdvance && readingTimer) {
+                          clearTimeout(readingTimer);
+                          setReadingTimer(null);
+                        } else if (autoAdvance && storyData?.scenes[currentScene] && !audioUrls[currentScene]) {
+                          setupReadingTimer(storyData.scenes[currentScene].text);
+                        }
+                      }}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        autoAdvance ? 'bg-yellow-500' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          autoAdvance ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
                   {/* Audio Play/Pause */}
                   {audioUrls[currentScene] && (
                     <Button
                       onClick={toggleAudio}
                       size="lg"
-                      className="flex items-center gap-3 px-8 py-4 text-xl font-bold rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 text-white hover:from-yellow-600 hover:to-amber-600 shadow-xl transform hover:scale-105 transition-all"
+                      className="cursor-pointer flex items-center gap-3 px-8 py-4 text-xl font-bold rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 text-white hover:from-yellow-600 hover:to-amber-600 shadow-xl transform hover:scale-105 transition-all"
                     >
                       {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
                       {isPlaying ? 'Pause Story' : 'Read to Me!'}
