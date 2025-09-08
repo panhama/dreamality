@@ -255,26 +255,26 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
   const currentSceneData = storyData.scenes[currentScene];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
         {/* Story Title and Moral - Only show on first page */}
         {currentScene === 0 && (
-          <div className="text-center mb-4">
-            <div className="inline-flex items-center gap-3 mb-6">
-              <BookOpen className="h-10 w-10 text-yellow-600" />
-              <h1 className="text-3xl py-2 font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
+          <div className="text-center mb-2 sm:mb-4">
+            <div className="inline-flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <BookOpen className="h-8 w-8 sm:h-10 sm:w-10 text-yellow-600" />
+              <h1 className="text-2xl sm:text-3xl py-2 font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
                 {storyData.title}
               </h1>
-              <Star className="h-10 w-10 text-amber-500" />
+              <Star className="h-8 w-8 sm:h-10 sm:w-10 text-amber-500" />
             </div>
             
             {/* Moral */}
-            <Card className="max-w-2xl mx-auto p-2 bg-gradient-to-r gap-1 from-yellow-100 to-amber-100 border-2 border-yellow-300">
+            <Card className="max-w-2xl mx-auto p-2 sm:p-4 bg-gradient-to-r gap-1 from-yellow-100 to-amber-100 border-2 border-yellow-300">
               <div className="flex items-center gap-2 mb-2">
-                <Heart className="h-6 w-6 text-red-500" />
-                <h2 className="text-2xl font-bold text-gray-800">The Heart of the Story</h2>
+                <Heart className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">The Heart of the Story</h2>
               </div>
-              <p className="text-xl text-gray-700 italic font-serif">
+              <p className="text-lg sm:text-xl text-gray-700 italic font-serif">
                 {storyData.moral}
               </p>
             </Card>
@@ -283,19 +283,19 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
 
         {/* Header with metadata - Show on all pages */}
         {metadata && currentScene > 0 && (
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 mb-4">
-              <BookOpen className="h-10 w-10 text-yellow-600" />
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
+          <div className="text-center mb-4 sm:mb-8">
+            <div className="inline-flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
+              <BookOpen className="h-8 w-8 sm:h-10 sm:w-10 text-yellow-600" />
+              <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
                 {metadata.name}&apos;s Adventure Book
               </h1>
-              <Star className="h-8 w-8 text-amber-500" />
+              <Star className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500" />
             </div>
-            <div className="flex justify-center gap-3 mb-4 flex-wrap">
-              <Badge variant="secondary" className="text-lg px-4 py-2 rounded-full bg-yellow-100 text-yellow-800 border-yellow-200">
+            <div className="flex justify-center gap-2 sm:gap-3 mb-4 flex-wrap">
+              <Badge variant="secondary" className="text-sm sm:text-lg px-3 py-1 sm:px-4 sm:py-2 rounded-full bg-yellow-100 text-yellow-800 border-yellow-200">
                 ✨ Dream: {metadata.dream}
               </Badge>
-              <Badge variant="secondary" className="whitespace-normal break-words text-lg px-4 py-2 rounded-full bg-amber-100 text-amber-800 border-amber-200">
+              <Badge variant="secondary" className="whitespace-normal break-words text-sm sm:text-lg px-3 py-1 sm:px-4 sm:py-2 rounded-full bg-amber-100 text-amber-800 border-amber-200">
                 🌟 {metadata.personality}
               </Badge>
             </div>
@@ -309,34 +309,34 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
             transition-all duration-500 ease-in-out transform-gpu
             ${isFlipping ? 'scale-95 rotate-y-12' : 'scale-100 rotate-y-0'}
             bg-gradient-to-br from-white via-yellow-50 to-amber-50
-            rounded-3xl min-h-[880px]
+            rounded-2xl sm:rounded-3xl min-h-[1120px] sm:min-h-[880px]
           `}>
             
             {/* Book Pages */}
-            <div className="grid md:grid-cols-2 min-h-[600px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[500px] sm:min-h-[600px]">
               
               {/* Left Page - Image */}
-              <div className="relative p-8 flex flex-col justify-center items-center bg-gradient-to-br from-yellow-50 to-orange-50 border-r-2 border-yellow-200 border-dashed">
+              <div className="relative p-4 sm:p-8 flex flex-col justify-center items-center bg-gradient-to-br from-yellow-50 to-orange-50 border-b-2 lg:border-b-0 lg:border-r-2 border-yellow-200 border-dashed">
                 {/* Page number top left */}
-                <div className="absolute top-4 left-4 text-sm font-bold text-yellow-600 bg-white px-3 py-1 rounded-full shadow-sm">
+                <div className="absolute top-2 left-2 sm:top-4 sm:left-4 text-xs sm:text-sm font-bold text-yellow-600 bg-white px-2 py-1 sm:px-3 sm:py-1 rounded-full shadow-sm">
                   {currentScene * 2 + 1}
                 </div>
                 
                 {/* Decorative corner */}
-                <div className="absolute top-4 right-4 w-8 h-8 bg-yellow-200 rounded-full flex items-center justify-center">
-                  <Star className="h-4 w-4 text-yellow-600" />
+                <div className="absolute top-2 right-2 sm:top-4 sm:right-4 w-6 h-6 sm:w-8 sm:h-8 bg-yellow-200 rounded-full flex items-center justify-center">
+                  <Star className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600" />
                 </div>
 
                 {/* Scene Title */}
-                <div className="text-center mb-6 w-full">
-                  <h2 className="text-3xl font-bold text-gray-800 mb-3 font-serif">
+                <div className="text-center mb-4 sm:mb-6 w-full">
+                  <h2 className="text-xl sm:text-3xl font-bold text-gray-800 mb-2 sm:mb-3 font-serif">
                     {currentSceneData.title}
                   </h2>
-                  <div className="w-16 h-1 bg-gradient-to-r from-yellow-400 to-amber-400 mx-auto rounded-full"></div>
+                  <div className="w-12 h-1 sm:w-16 sm:h-1 bg-gradient-to-r from-yellow-400 to-amber-400 mx-auto rounded-full"></div>
                 </div>
 
                 {/* Image */}
-                <div className="flex-1 w-full flex items-center justify-center max-w-md">
+                <div className="flex-1 w-full flex items-center justify-center max-w-sm sm:max-w-md">
                   {(() => {
                     // Find the best available image for this scene
                     let imageToShow = imageUrls[currentScene];
@@ -352,7 +352,7 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                     }
                     
                     return imageToShow ? (
-                      <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-xl border-4 border-white">
+                      <div className="relative w-full aspect-square rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-4 border-white">
                         <Image 
                           src={imageToShow} 
                           alt={currentSceneData.title}
@@ -361,10 +361,10 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                         />
                       </div>
                     ) : (
-                      <div className="w-full aspect-square bg-gradient-to-br from-yellow-100 to-amber-100 rounded-2xl flex items-center justify-center border-4 border-white shadow-xl">
+                      <div className="w-full aspect-square bg-gradient-to-br from-yellow-100 to-amber-100 rounded-xl sm:rounded-2xl flex items-center justify-center border-4 border-white shadow-xl">
                         <div className="text-center">
-                          <BookOpen className="h-16 w-16 text-yellow-400 mx-auto mb-3" />
-                          <p className="text-yellow-600 font-medium">Loading magical image...</p>
+                          <BookOpen className="h-12 w-12 sm:h-16 sm:w-16 text-yellow-400 mx-auto mb-2 sm:mb-3" />
+                          <p className="text-sm sm:text-base text-yellow-600 font-medium">Loading magical image...</p>
                         </div>
                       </div>
                     );
@@ -372,37 +372,37 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                 </div>
 
                 {/* Caption */}
-                <div className="mt-4 text-center">
-                  <p className="text-lg text-gray-700 italic font-serif bg-white/80 px-4 py-2 rounded-lg shadow-sm">
+                <div className="mt-3 sm:mt-4 text-center">
+                  <p className="text-sm sm:text-lg text-gray-700 italic font-serif bg-white/80 px-3 py-1 sm:px-4 sm:py-2 rounded-lg shadow-sm">
                     {currentSceneData.caption.replace(/\[([^\]]+)\]/g, '').trim()}
                   </p>
                 </div>
               </div>
 
               {/* Right Page - Text */}
-              <div className="relative p-8 flex flex-col justify-center bg-gradient-to-br from-white to-yellow-50">
+              <div className="relative p-4 sm:p-8 flex flex-col justify-center bg-gradient-to-br from-white to-yellow-50">
                 {/* Page number top right */}
-                <div className="absolute top-4 right-4 text-sm font-bold text-yellow-600 bg-white px-3 py-1 rounded-full shadow-sm">
+                <div className="absolute top-2 right-2 sm:top-4 sm:right-4 text-xs sm:text-sm font-bold text-yellow-600 bg-white px-2 py-1 sm:px-3 sm:py-1 rounded-full shadow-sm">
                   {currentScene * 2 + 2}
                 </div>
 
                 {/* Decorative corner */}
-                <div className="absolute top-4 left-4 w-8 h-8 bg-amber-200 rounded-full flex items-center justify-center">
-                  <Star className="h-4 w-4 text-amber-600" />
+                <div className="absolute top-2 left-2 sm:top-4 sm:left-4 w-6 h-6 sm:w-8 sm:h-8 bg-amber-200 rounded-full flex items-center justify-center">
+                  <Star className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600" />
                 </div>
 
                 {/* Story Text */}
                 <div className="flex-1 flex items-center justify-center">
                   <div className="w-full max-w-lg">
-                    <p className="text-xl leading-relaxed text-gray-800 font-serif text-justify indent-8 bg-white/70 p-6 rounded-xl shadow-sm border-l-4 border-yellow-400">
+                    <p className="text-lg sm:text-xl leading-relaxed text-gray-800 font-serif text-justify indent-4 sm:indent-8 bg-white/70 p-4 sm:p-6 rounded-xl shadow-sm border-l-4 border-yellow-400">
                       {currentSceneData.text.replace(/\[([^\]]+)\]/g, '').trim()}
                     </p>
                   </div>
                 </div>
 
                 {/* Emotion Hint */}
-                <div className="mt-4 text-center">
-                  <Badge variant="outline" className="text-sm px-3 py-1 bg-white/80 border-yellow-300 text-yellow-700">
+                <div className="mt-3 sm:mt-4 text-center">
+                  <Badge variant="outline" className="text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1 bg-white/80 border-yellow-300 text-yellow-700">
                     Feeling: {currentSceneData.emotion_hint}
                   </Badge>
                 </div>
@@ -410,8 +410,8 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
             </div>
 
             {/* Bottom Controls */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-yellow-200 via-amber-200 to-yellow-200 p-6 border-t-2 border-yellow-300">
-              <div className="flex items-center justify-between max-w-4xl mx-auto">
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-yellow-200 via-amber-200 to-yellow-200 p-3 sm:p-6 border-t-2 border-yellow-300">
+              <div className="flex flex-col sm:flex-row items-center justify-between max-w-4xl mx-auto gap-3 sm:gap-0">
                 
                 {/* Previous Button */}
                 <Button
@@ -419,17 +419,17 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                   disabled={currentScene === 0 || isFlipping}
                   variant="outline"
                   size="lg"
-                  className="flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-full cursor-pointer bg-white border-2 border-yellow-400 text-yellow-700 hover:bg-yellow-50 disabled:opacity-50 shadow-lg"
+                  className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-lg font-bold rounded-full cursor-pointer bg-white border-2 border-yellow-400 text-yellow-700 hover:bg-yellow-50 disabled:opacity-50 shadow-lg w-full sm:w-auto justify-center sm:justify-start"
                 >
-                  <ChevronLeft className="h-6 w-6" />
+                  <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
                   Previous Page
                 </Button>
 
                 {/* Center Audio Controls */}
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-2 sm:gap-3 order-first sm:order-none w-full sm:w-auto">
                   {/* Auto-advance Toggle */}
-                  <div className="flex items-center gap-2 bg-white/90 px-4 py-2 rounded-full shadow-sm">
-                    <span className="text-sm font-medium text-gray-700">Auto-advance:</span>
+                  <div className="flex items-center gap-2 bg-white/90 px-3 py-1 sm:px-4 sm:py-2 rounded-full shadow-sm">
+                    <span className="text-xs sm:text-sm font-medium text-gray-700">Auto-advance:</span>
                     <button
                       onClick={() => {
                         setAutoAdvance(!autoAdvance);
@@ -440,13 +440,13 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                           setupReadingTimer(storyData.scenes[currentScene].text);
                         }
                       }}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      className={`relative inline-flex h-5 w-9 sm:h-6 sm:w-11 items-center rounded-full transition-colors ${
                         autoAdvance ? 'bg-yellow-500' : 'bg-gray-300'
                       }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          autoAdvance ? 'translate-x-6' : 'translate-x-1'
+                        className={`inline-block h-3 w-3 sm:h-4 sm:w-4 transform rounded-full bg-white transition-transform ${
+                          autoAdvance ? 'translate-x-4 sm:translate-x-6' : 'translate-x-0.5 sm:translate-x-1'
                         }`}
                       />
                     </button>
@@ -457,24 +457,24 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                     <Button
                       onClick={toggleAudio}
                       size="lg"
-                      className="cursor-pointer flex items-center gap-3 px-8 py-4 text-xl font-bold rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 text-white hover:from-yellow-600 hover:to-amber-600 shadow-xl transform hover:scale-105 transition-all"
+                      className="cursor-pointer flex items-center gap-2 sm:gap-3 px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-xl font-bold rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 text-white hover:from-yellow-600 hover:to-amber-600 shadow-xl transform hover:scale-105 transition-all w-full sm:w-auto justify-center"
                     >
-                      {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
+                      {isPlaying ? <Pause className="h-5 w-5 sm:h-7 sm:w-7" /> : <Play className="h-5 w-5 sm:h-7 sm:w-7" />}
                       {isPlaying ? 'Pause Story' : 'Read to Me!'}
-                      <Volume2 className="h-6 w-6" />
+                      <Volume2 className="h-4 w-4 sm:h-6 sm:w-6" />
                     </Button>
                   )}
 
                   {/* Page Dots */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
                     {Array.from({ length: totalScenes }, (_, i) => (
                       <button
                         key={i}
                         onClick={() => goToScene(i)}
                         className={`transition-all duration-300 rounded-full ${
                           i === currentScene 
-                            ? 'w-4 h-4 bg-yellow-600 shadow-lg scale-125' 
-                            : 'w-3 h-3 bg-yellow-300 hover:bg-yellow-400 hover:scale-110'
+                            ? 'w-3 h-3 sm:w-4 sm:h-4 bg-yellow-600 shadow-lg scale-125' 
+                            : 'w-2 h-2 sm:w-3 sm:h-3 bg-yellow-300 hover:bg-yellow-400 hover:scale-110'
                         }`}
                       />
                     ))}
@@ -487,16 +487,16 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
                   disabled={currentScene === totalScenes - 1 || isFlipping}
                   variant="outline"
                   size="lg"
-                  className="flex items-center gap-2 px-6 py-3 text-lg font-bold rounded-full cursor-pointer bg-white border-2 border-yellow-400 text-yellow-700 hover:bg-yellow-50 disabled:opacity-50 shadow-lg"
+                  className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-lg font-bold rounded-full cursor-pointer bg-white border-2 border-yellow-400 text-yellow-700 hover:bg-yellow-50 disabled:opacity-50 shadow-lg w-full sm:w-auto justify-center sm:justify-end"
                 >
                   Next Page
-                  <ChevronRight className="h-6 w-6" />
+                  <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               </div>
 
               {/* Page Counter */}
-              <div className="text-center mt-3">
-                <p className="text-lg font-bold text-yellow-800">
+              <div className="text-center mt-2 sm:mt-3">
+                <p className="text-xs sm:text-lg font-bold text-yellow-800">
                   📖 Page {currentScene + 1} of {totalScenes}
                 </p>
               </div>
@@ -505,12 +505,12 @@ export default function StoryViewer({ storyText, imageUrls, audioUrls, scenes, m
         </div>
 
         {/* Back to Library Button */}
-        <div className="text-center mt-8">
+        <div className="text-center mt-4 sm:mt-8">
           <Button
             onClick={() => window.history.back()}
             variant="outline"
             size="lg"
-            className="px-8 py-3 text-lg font-bold rounded-full bg-white border-2 border-amber-400 text-amber-700 hover:bg-amber-50 shadow-lg cursor-pointer hover:scale-105 transition-all"
+            className="px-6 py-2 sm:px-8 sm:py-3 text-sm sm:text-lg font-bold rounded-full bg-white border-2 border-amber-400 text-amber-700 hover:bg-amber-50 shadow-lg cursor-pointer hover:scale-105 transition-all"
           >
             📚 Back to Story Library
           </Button>
