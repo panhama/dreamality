@@ -1,11 +1,11 @@
 // app/page.tsx (or wherever your Home component lives)
 "use client";
 
-import { Input, Textarea, Card, Label, Badge, Separator } from "@/components/ui/index";
+import { Input, Textarea, Card, Label, Badge, Separator, Button } from "@/components/ui/index";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Sparkles, User, Heart, Palette, Settings as SettingsIcon, BookOpen, ArrowRight } from "lucide-react";
+import { Upload, Sparkles, User, Heart, Palette, Settings as SettingsIcon, BookOpen, ArrowRight, Eye } from "lucide-react";
 import Image from "next/image";
 import GenerationProgress from "@/components/GenerationProgress";
 import Switch from "@/components/ui/toggle";
@@ -259,6 +259,27 @@ export default function Home() {
 
       <GenerationProgress currentStep={currentStep} isLoading={isLoading} />
     </div>
+      <div className="flex justify-center mb-6">
+        <div className="max-w-2xl w-full mx-4 p-4 bg-gradient-to-b from-white/80 to-amber-50/60 backdrop-blur-sm rounded-xl border border-amber-100 shadow-lg flex items-center gap-4">
+          <div className="flex-shrink-0">
+            <div className="p-2 rounded-md bg-amber-50">
+              <Sparkles className="h-6 w-6 text-amber-500" />
+            </div>
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-gray-800">Discover public stories</p>
+            <p className="text-sm text-gray-600">Find community-crafted adventures to spark ideas or revisit favorite magical tales.</p>
+          </div>
+          <div className="flex-shrink-0">
+            <Button asChild variant="default" size="lg" className="bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-400 text-white shadow-md hover:shadow-lg focus:ring-amber-300">
+              <Link href="/stories" aria-label="View public stories - explore previous magical tales" className="inline-flex items-center gap-2 px-3">
+                <Eye className="h-5 w-5" />
+                <span>Browse stories</span>
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
       <div className="flex justify-center mb-4">
         <div className="max-w-2xl mx-4 p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200 shadow-sm">
           <div className="flex items-start gap-3">
