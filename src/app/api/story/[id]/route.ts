@@ -2,13 +2,25 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { stories as storiesTable } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { isValidUUID, checkRateLimit } from '@/lib/security';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Basic rate limiting
+    const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(clientIP, 30, 60000)) { // 30 requests per minute for story viewing
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
+
     const { id: storyId } = await params;
+
+    // Validate storyId format using security utility
+    if (!isValidUUID(storyId)) {
+      return NextResponse.json({ error: 'Invalid story ID format' }, { status: 400 });
+    }
 
     // Read from database only
     const row = await db.select().from(storiesTable).where(eq(storiesTable.storyId, storyId)).limit(1);

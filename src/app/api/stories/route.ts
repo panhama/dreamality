@@ -2,9 +2,16 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { stories as storiesTable } from '@/lib/db/schema';
 import { desc, eq } from 'drizzle-orm';
+import { checkRateLimit } from '@/lib/security';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Basic rate limiting
+    const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(clientIP, 20, 60000)) { // 20 requests per minute for story listing
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
+
     // Read from database only - filter for public stories
     const rows = await db.select({
       storyId: storiesTable.storyId,

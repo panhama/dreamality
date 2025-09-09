@@ -8,6 +8,7 @@ import { ElevenLabsService } from "@/lib/ai/elevenlabs";
 import { r2Service } from "@/lib/r2";
 import { db } from "@/lib/db";
 import { stories as storiesTable } from "@/lib/db/schema";
+import { validateFile, sanitizeTextInput, checkRateLimit } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -144,11 +145,28 @@ function buildNarrationScript(scenes: StoryScene[], mode: "narrator"|"playful"|"
 
 export async function POST(req: Request) {
   try {
+    // Basic rate limiting (10 requests per minute per IP)
+    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(clientIP, 10, 60000)) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
+
     // -------- Parse form --------
     const formData = await req.formData();
-    const name = String(formData.get("name") || "").trim();
-    const dream = String(formData.get("dream") || "").trim();
-    const personality = String(formData.get("personality") || "").trim();
+    const name = sanitizeTextInput(String(formData.get("name") || "").trim(), 100);
+    const dream = sanitizeTextInput(String(formData.get("dream") || "").trim(), 500);
+    const personality = sanitizeTextInput(String(formData.get("personality") || "").trim(), 200);
+
+    // Input validation
+    if (!name) {
+      return NextResponse.json({ error: "Name is required and must be less than 100 characters" }, { status: 400 });
+    }
+    if (!dream) {
+      return NextResponse.json({ error: "Dream description is required and must be less than 500 characters" }, { status: 400 });
+    }
+    if (!personality) {
+      return NextResponse.json({ error: "Personality description is required and must be less than 200 characters" }, { status: 400 });
+    }
 
     const voicePreset = (formData.get("voicePreset") as string) || "warm_narrator"; // warm_narrator | playful_hero | epic_guardian
     // Use smart defaults for audio parameters (simplified frontend)
@@ -167,24 +185,45 @@ export async function POST(req: Request) {
     // optional: persistent designed voice id from the new dialog
     const designedVoiceId = (formData.get("voiceId") as string) || "";
 
-    // -------- Optional reference photos --------
+    // -------- File upload validation --------
     const referenceImageParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
 
     try {
       // Handle multiple photos (photo_0, photo_1, etc.)
       let photoIndex = 0;
+      let photoCount = 0;
+
       while (photoIndex < 5) { // Max 5 photos
         const photo = formData.get(`photo_${photoIndex}`) as File | null;
         if (photo && typeof photo.arrayBuffer === "function" && photo.size > 0) {
+          photoCount++;
+
+          // Use centralized file validation
+          const validation = await validateFile(photo);
+          if (!validation.isValid) {
+            return NextResponse.json({ error: validation.error }, { status: 400 });
+          }
+
           const ab = await photo.arrayBuffer();
           const b64 = Buffer.from(ab).toString("base64");
-          const mimeType = photo.type || mime.getType(photo.name || "") || "image/jpeg";
+          const mimeType = photo.type;
           referenceImageParts.push({ inlineData: { mimeType, data: b64 } });
         }
         photoIndex++;
       }
+
+      // Limit total photos to prevent abuse
+      if (photoCount > 5) {
+        return NextResponse.json({
+          error: "Too many files uploaded. Maximum 5 photos allowed."
+        }, { status: 400 });
+      }
+
     } catch (e) {
-      console.warn("Reference photos skipped:", e);
+      console.warn("Reference photos validation failed:", e);
+      return NextResponse.json({
+        error: "File upload validation failed. Please ensure all files are valid images."
+      }, { status: 400 });
     }
 
     // -------- Helpers --------
