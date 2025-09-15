@@ -60,7 +60,7 @@ export async function GET(
 
       const [regeneratedImageUrls, regeneratedAudioUrls] = await Promise.all([
         r2Service.regenerateUrls(decodedImageUrls, 'images'), // Images are in 'images' folder
-        r2Service.regenerateUrls(decodedAudioUrls, 'generated') // Audio is in 'generated' folder
+        r2Service.regenerateUrls(decodedAudioUrls, 'audio') // Audio is in 'audio' folder
       ]);
 
       story.imageUrls = regeneratedImageUrls;
