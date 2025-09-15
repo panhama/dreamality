@@ -51,7 +51,7 @@ export class R2Service {
       });
 
       const signedUrl = await getSignedUrl(this.s3Client, getCommand, {
-        expiresIn: 365 * 24 * 60 * 60, // 1 year
+        expiresIn: 7 * 24 * 60 * 60, // 7 days (R2 maximum)
       });
 
       console.log(`✓ File uploaded to R2: ${key}`);
@@ -99,7 +99,7 @@ export class R2Service {
       });
 
       const signedUrl = await getSignedUrl(this.s3Client, command, {
-        expiresIn: 365 * 24 * 60 * 60, // 1 year
+        expiresIn: 7 * 24 * 60 * 60, // 7 days (R2 maximum)
       });
 
       return signedUrl;
