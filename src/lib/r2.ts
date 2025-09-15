@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export class R2Service {
@@ -117,15 +117,43 @@ export class R2Service {
 
     for (const url of urls) {
       try {
-        // Extract filename from the URL
-        const urlParts = url.split('/');
-        const fileName = urlParts[urlParts.length - 1];
+        // Extract filename from the URL, handling double-encoded URLs and query parameters
+        let cleanUrl = url;
+        try {
+          // Try to decode if double-encoded
+          cleanUrl = decodeURIComponent(url);
+        } catch (e) {
+          // If decoding fails, use original URL
+          cleanUrl = url;
+        }
 
-        if (fileName) {
-          const newUrl = await this.getPublicUrl(fileName, folder);
-          regeneratedUrls.push(newUrl);
+        // Parse the URL to extract the pathname
+        let pathname = '';
+        try {
+          const urlObj = new URL(cleanUrl);
+          pathname = urlObj.pathname;
+        } catch (e) {
+          // If URL parsing fails, try the old method
+          const urlParts = cleanUrl.split('/');
+          pathname = '/' + urlParts[urlParts.length - 1].split('?')[0];
+        }
+
+        // Extract filename from pathname
+        const pathParts = pathname.split('/');
+        const fileName = pathParts[pathParts.length - 1];
+
+        if (fileName && fileName !== 'placeholder-image.svg' && !fileName.includes('aws4_request') && !fileName.includes('X-Amz-')) {
+          // Check if file exists before generating URL
+          const exists = await this.fileExists(fileName, folder);
+          if (exists) {
+            const newUrl = await this.getPublicUrl(fileName, folder);
+            regeneratedUrls.push(newUrl);
+          } else {
+            console.warn(`File not found in R2: ${folder}/${fileName}, using placeholder`);
+            regeneratedUrls.push('/placeholder-image.svg');
+          }
         } else {
-          // If we can't extract filename, keep the original URL
+          // If we can't extract filename or it's already a placeholder, keep the original URL
           regeneratedUrls.push(url);
         }
       } catch (error) {
@@ -136,6 +164,51 @@ export class R2Service {
     }
 
     return regeneratedUrls;
+  }
+
+  /**
+   * Check if a file exists in R2
+   */
+  async fileExists(fileName: string, folder: string = 'generated'): Promise<boolean> {
+    const key = `${folder}/${fileName}`;
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+
+      // Try to get object metadata (without downloading the file)
+      await this.s3Client.send(command);
+      return true;
+    } catch (error: any) {
+      // If the error is 404, file doesn't exist
+      if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+        return false;
+      }
+      // For other errors (permissions, network, etc.), assume file exists to avoid false negatives
+      console.warn('Error checking file existence:', error);
+      return true;
+    }
+  }
+
+  /**
+   * List files in a folder (for debugging)
+   */
+  async listFiles(folder: string = 'generated', maxKeys: number = 100): Promise<string[]> {
+    try {
+      const command = new ListObjectsV2Command({
+        Bucket: this.bucketName,
+        Prefix: folder === '' ? undefined : `${folder}/`,
+        MaxKeys: maxKeys,
+      });
+
+      const response = await this.s3Client.send(command);
+      return (response.Contents || []).map(obj => obj.Key || '').filter(key => key);
+    } catch (error) {
+      console.error('Error listing files:', error);
+      return [];
+    }
   }
 }
 

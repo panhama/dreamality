@@ -35,9 +35,32 @@ export async function GET(
 
     // Regenerate presigned URLs to fix expired ones
     try {
+      // Decode URLs that might be double-encoded, but handle non-URL strings gracefully
+      const decodedImageUrls = (story.imageUrls || []).map(url => {
+        if (typeof url === 'string' && url.startsWith('http')) {
+          try {
+            return decodeURIComponent(url);
+          } catch (e) {
+            return url; // Return original if decoding fails
+          }
+        }
+        return url; // Return as-is if not a URL
+      });
+
+      const decodedAudioUrls = (story.audioUrls || []).map(url => {
+        if (typeof url === 'string' && url.startsWith('http')) {
+          try {
+            return decodeURIComponent(url);
+          } catch (e) {
+            return url; // Return original if decoding fails
+          }
+        }
+        return url; // Return as-is if not a URL
+      });
+
       const [regeneratedImageUrls, regeneratedAudioUrls] = await Promise.all([
-        r2Service.regenerateUrls(story.imageUrls || [], 'images'), // Images are in 'images' folder
-        r2Service.regenerateUrls(story.audioUrls || [], 'generated') // Audio is in 'generated' folder
+        r2Service.regenerateUrls(decodedImageUrls, 'images'), // Images are in 'images' folder
+        r2Service.regenerateUrls(decodedAudioUrls, 'generated') // Audio is in 'generated' folder
       ]);
 
       story.imageUrls = regeneratedImageUrls;
