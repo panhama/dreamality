@@ -36,8 +36,8 @@ export async function GET(
     // Regenerate presigned URLs to fix expired ones
     try {
       const [regeneratedImageUrls, regeneratedAudioUrls] = await Promise.all([
-        r2Service.regenerateUrls(story.imageUrls || []),
-        r2Service.regenerateUrls(story.audioUrls || [])
+        r2Service.regenerateUrls(story.imageUrls || [], 'images'), // Images are in 'images' folder
+        r2Service.regenerateUrls(story.audioUrls || [], 'generated') // Audio is in 'generated' folder
       ]);
 
       story.imageUrls = regeneratedImageUrls;
