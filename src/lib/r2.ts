@@ -44,14 +44,14 @@ export class R2Service {
 
       await this.s3Client.send(command);
 
-      // Generate a presigned URL for public access (valid for 7 days - R2 limit)
+      // Generate a presigned URL for public access (valid for 1 year)
       const getCommand = new GetObjectCommand({
         Bucket: this.bucketName,
         Key: key,
       });
 
       const signedUrl = await getSignedUrl(this.s3Client, getCommand, {
-        expiresIn: 7 * 24 * 60 * 60, // 7 days (Max for R2)
+        expiresIn: 365 * 24 * 60 * 60, // 1 year
       });
 
       console.log(`✓ File uploaded to R2: ${key}`);
@@ -99,7 +99,7 @@ export class R2Service {
       });
 
       const signedUrl = await getSignedUrl(this.s3Client, command, {
-        expiresIn: 7 * 24 * 60 * 60, // 7 days (Max for R2)
+        expiresIn: 365 * 24 * 60 * 60, // 1 year
       });
 
       return signedUrl;
@@ -107,6 +107,35 @@ export class R2Service {
       console.error('Error generating presigned URL:', error);
       throw new Error(`Failed to generate presigned URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Regenerate presigned URLs for existing files
+   */
+  async regenerateUrls(urls: string[], folder: string = 'generated'): Promise<string[]> {
+    const regeneratedUrls: string[] = [];
+
+    for (const url of urls) {
+      try {
+        // Extract filename from the URL
+        const urlParts = url.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+
+        if (fileName) {
+          const newUrl = await this.getPublicUrl(fileName, folder);
+          regeneratedUrls.push(newUrl);
+        } else {
+          // If we can't extract filename, keep the original URL
+          regeneratedUrls.push(url);
+        }
+      } catch (error) {
+        console.error('Error regenerating URL:', error);
+        // Keep the original URL if regeneration fails
+        regeneratedUrls.push(url);
+      }
+    }
+
+    return regeneratedUrls;
   }
 }
 

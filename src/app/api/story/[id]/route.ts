@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { stories as storiesTable } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { isValidUUID, checkRateLimit } from '@/lib/security';
+import { r2Service } from '@/lib/r2';
 
 export async function GET(
   request: Request,
@@ -30,7 +31,23 @@ export async function GET(
       return NextResponse.json({ error: 'Story not found' }, { status: 404 });
     }
 
-    return NextResponse.json(row[0]);
+    const story = row[0];
+
+    // Regenerate presigned URLs to fix expired ones
+    try {
+      const [regeneratedImageUrls, regeneratedAudioUrls] = await Promise.all([
+        r2Service.regenerateUrls(story.imageUrls || []),
+        r2Service.regenerateUrls(story.audioUrls || [])
+      ]);
+
+      story.imageUrls = regeneratedImageUrls;
+      story.audioUrls = regeneratedAudioUrls;
+    } catch (error) {
+      console.error('Error regenerating URLs:', error);
+      // Continue with original URLs if regeneration fails
+    }
+
+    return NextResponse.json(story);
   } catch (error) {
     console.error('Error fetching story from database:', error);
     return NextResponse.json({ error: 'Failed to fetch story' }, { status: 500 });
