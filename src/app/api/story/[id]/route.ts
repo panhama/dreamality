@@ -40,7 +40,7 @@ export async function GET(
         if (typeof url === 'string' && url.startsWith('http')) {
           try {
             return decodeURIComponent(url);
-          } catch (e) {
+          } catch {
             return url; // Return original if decoding fails
           }
         }
@@ -51,7 +51,7 @@ export async function GET(
         if (typeof url === 'string' && url.startsWith('http')) {
           try {
             return decodeURIComponent(url);
-          } catch (e) {
+          } catch {
             return url; // Return original if decoding fails
           }
         }

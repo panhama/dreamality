@@ -68,7 +68,7 @@ export async function validateFile(
       return { isValid: false, error: `File ${file.name} is not a valid image file.` };
     }
 
-  } catch (error) {
+  } catch {
     return { isValid: false, error: `Failed to validate file ${file.name}.` };
   }
 

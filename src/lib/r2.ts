@@ -122,7 +122,7 @@ export class R2Service {
         try {
           // Try to decode if double-encoded
           cleanUrl = decodeURIComponent(url);
-        } catch (e) {
+        } catch {
           // If decoding fails, use original URL
           cleanUrl = url;
         }
@@ -132,7 +132,7 @@ export class R2Service {
         try {
           const urlObj = new URL(cleanUrl);
           pathname = urlObj.pathname;
-        } catch (e) {
+        } catch {
           // If URL parsing fails, try the old method
           const urlParts = cleanUrl.split('/');
           pathname = '/' + urlParts[urlParts.length - 1].split('?')[0];
@@ -181,10 +181,17 @@ export class R2Service {
       // Try to get object metadata (without downloading the file)
       await this.s3Client.send(command);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If the error is 404, file doesn't exist
-      if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+      if (error instanceof Error && error.name === 'NoSuchKey') {
         return false;
+      }
+      // Check for AWS SDK specific error structure
+      if (typeof error === 'object' && error !== null && '$metadata' in error) {
+        const awsError = error as { $metadata?: { httpStatusCode?: number } };
+        if (awsError.$metadata?.httpStatusCode === 404) {
+          return false;
+        }
       }
       // For other errors (permissions, network, etc.), assume file exists to avoid false negatives
       console.warn('Error checking file existence:', error);
